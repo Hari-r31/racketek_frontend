@@ -114,8 +114,8 @@ function AddressForm({
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button type="submit" disabled={mutation.isPending} className="btn-primary flex-1">
-          {mutation.isPending ? "Saving..." : initial ? "Update Address" : "Add Address"}
+        <button type="submit" disabled={mutation.isLoading} className="btn-primary flex-1">
+          {mutation.isLoading ? "Saving..." : initial ? "Update Address" : "Add Address"}
         </button>
         <button type="button" onClick={onClose} className="btn-outline flex-1">
           Cancel

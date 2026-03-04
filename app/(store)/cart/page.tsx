@@ -37,14 +37,16 @@ export default function CartPage() {
     },
   });
 
-  const applyCoupon = useMutation({
-    mutationFn: () => api.post("/cart/coupon", { coupon_code: couponCode }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["cart"] });
-      toast.success("Coupon applied!");
-    },
-    onError: (e: any) => toast.error(e.response?.data?.detail || "Invalid coupon"),
-  });
+  const applyCoupon = useMutation(
+    () => api.post("/cart/coupon", { coupon_code: couponCode }),
+    {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["cart"] });
+        toast.success("Coupon applied!");
+      },
+      onError: (e: any) => toast.error(e.response?.data?.detail || "Invalid coupon"),
+    }
+  );
 
   const removeCoupon = useMutation({
     mutationFn: () => api.delete("/cart/coupon"),
@@ -208,7 +210,7 @@ export default function CartPage() {
                 />
                 <button
                   onClick={() => applyCoupon.mutate()}
-                  disabled={!couponCode.trim() || applyCoupon.isPending}
+                  disabled={!couponCode.trim() || applyCoupon.isLoading}
                   className="btn-outline text-sm px-4 py-2"
                 >
                   Apply

@@ -186,7 +186,7 @@ export default function WishlistPage() {
                   {/* Remove button */}
                   <button
                     onClick={() => removeMutation.mutate(product.id)}
-                    disabled={removeMutation.isPending}
+                    disabled={removeMutation.isLoading}
                     className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 size={13} />

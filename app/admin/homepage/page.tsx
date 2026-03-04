@@ -864,7 +864,7 @@ export default function AdminHomepagePage() {
 
   const draft    = drafts[active];
   const section  = SECTIONS.find(s => s.key === active)!;
-  const isSaving = saveMut.isPending && (saveMut.variables as any)?.key === active;
+  const isSaving = saveMut.isLoading && (saveMut.variables as any)?.key === active;
   const idx      = SECTIONS.findIndex(s => s.key === active);
   const Ico      = section ? SECTION_ICON[section.key] : LayoutTemplate;
 

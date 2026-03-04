@@ -106,6 +106,10 @@ export default function ProductDetailPage() {
   const selectedVar = product.variants?.find((v) => v.id === variantId);
   const finalPrice  = product.price + (selectedVar?.price_modifier ?? 0);
 
+  // ── Stable primitives extracted so useCallback deps are always defined ──
+  const productId    = product.id;
+  const productStock = product.stock;
+
   // ── Cart action handlers ──────────────────────────────────────────
 
   const handleAddToCart = useCallback(async () => {
@@ -113,50 +117,51 @@ export default function ProductDetailPage() {
       router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    await addToCart(product.id, variantId, addQty);
+    await addToCart(productId, variantId, addQty);
     toast.success(`${addQty} item${addQty > 1 ? "s" : ""} added to cart!`);
-  }, [isAuthenticated, product.id, variantId, addQty, addToCart, router]);
+  }, [isAuthenticated, productId, variantId, addQty, addToCart, router]);
 
   const handleIncrease = useCallback(async () => {
-    if (!cartEntry || cartEntry.quantity >= product.stock) return;
+    if (!cartEntry || cartEntry.quantity >= productStock) return;
     await updateQty(
-      product.id, variantId,
+      productId, variantId,
       cartEntry.cartItemId,
       cartEntry.quantity,
       cartEntry.quantity + 1,
     );
-  }, [cartEntry, product.id, product.stock, variantId, updateQty]);
+  }, [cartEntry, productId, productStock, variantId, updateQty]);
 
   const handleDecrease = useCallback(async () => {
     if (!cartEntry) return;
     if (cartEntry.quantity <= 1) {
-      await removeFromCart(product.id, variantId, cartEntry.cartItemId, cartEntry.quantity);
+      await removeFromCart(productId, variantId, cartEntry.cartItemId, cartEntry.quantity);
     } else {
       await updateQty(
-        product.id, variantId,
+        productId, variantId,
         cartEntry.cartItemId,
         cartEntry.quantity,
         cartEntry.quantity - 1,
       );
     }
-  }, [cartEntry, product.id, variantId, updateQty, removeFromCart]);
+  }, [cartEntry, productId, variantId, updateQty, removeFromCart]);
 
   const handleBuyNow = useCallback(async () => {
     if (!isAuthenticated) { router.push("/auth/login"); return; }
     setBuyNow(true);
     try {
       if (!inCart) {
-        await addToCart(product.id, variantId, addQty);
+        await addToCart(productId, variantId, addQty);
       }
       router.push("/checkout");
     } catch {
       toast.error("Failed");
       setBuyNow(false);
     }
-  }, [isAuthenticated, inCart, product.id, variantId, addQty, addToCart, router]);
+  }, [isAuthenticated, inCart, productId, variantId, addQty, addToCart, router]);
 
   async function toggleWishlist() {
     if (!isAuthenticated) { toast.error("Please login"); return; }
+    if (!product) return;
     try {
       if (wishlisted) {
         await api.delete(`/wishlist/${product.id}`);

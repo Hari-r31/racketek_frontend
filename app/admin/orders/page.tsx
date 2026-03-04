@@ -322,9 +322,9 @@ function OrderDetail({ orderId, onClose }: { orderId: number; onClose: () => voi
               <input type="date" value={shipForm.estimated_delivery} onChange={e => setShipForm(p => ({ ...p, estimated_delivery: e.target.value }))}
                 className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-500" />
             </div>
-            <button onClick={() => shipmentMut.mutate(shipForm)} disabled={!shipForm.tracking_number || shipmentMut.isPending}
+            <button onClick={() => shipmentMut.mutate(shipForm)} disabled={!shipForm.tracking_number || shipmentMut.isLoading}
               className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50">
-              {shipmentMut.isPending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : <><Truck size={15} /> Save Shipment & Mark Shipped</>}
+              {shipmentMut.isLoading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : <><Truck size={15} /> Save Shipment & Mark Shipped</>}
             </button>
           </div>
         )}

@@ -9,7 +9,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime:        60_000,
-            gcTime:           5 * 60_000,   // keep unused cache 5 min
+            cacheTime:        5 * 60_000,   // keep unused cache 5 min
             retry:            1,
             refetchOnWindowFocus: false,
           },

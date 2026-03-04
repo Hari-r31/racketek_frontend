@@ -227,10 +227,10 @@ export default function AccountProfilePage() {
     return (
       <button
         onClick={() => profileMut.mutate(form)}
-        disabled={profileMut.isPending}
+        disabled={profileMut.isLoading}
         className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-sm transition-all hover:scale-[1.01] active:scale-100 disabled:opacity-60"
       >
-        {profileMut.isPending
+        {profileMut.isLoading
           ? <Loader2 size={14} className="animate-spin" />
           : <Save size={14} />}
         {label}
@@ -256,10 +256,10 @@ export default function AccountProfilePage() {
             </div>
             <button
               onClick={() => verifyMut.mutate()}
-              disabled={verifyMut.isPending || verificationSent}
+              disabled={verifyMut.isLoading || verificationSent}
               className="shrink-0 flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-3 py-2 rounded-xl disabled:opacity-60 transition-all"
             >
-              {verifyMut.isPending
+              {verifyMut.isLoading
                 ? <Loader2 size={11} className="animate-spin" />
                 : <Mail size={11} />}
               {verificationSent ? "Sent ✓" : "Verify Now"}

@@ -83,7 +83,7 @@ export default function BundleBuilder({ data }: Props) {
       let subtotal   = 0;
       let itemCount  = 0;
 
-      for (const [id, qty] of nextSelected.entries()) {
+      for (const [id, qty] of Array.from(nextSelected.entries())) {
         const p = products.find((p) => p.id === id);
         if (!p) continue;
         subtotal  += p.price * qty;

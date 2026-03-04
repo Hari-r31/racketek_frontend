@@ -1,6 +1,6 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Headphones, Clock, CheckCircle2, AlertCircle, MessageSquare,
@@ -293,11 +293,14 @@ function TicketDetailDrawer({ ticketId, onClose, onUpdate }: {
     queryKey: ["admin-ticket-detail", ticketId],
     queryFn:  () => api.get(`/support/admin/${ticketId}`).then(r => r.data),
     staleTime: 0,
-    onSuccess: d => {
-      setNewStatus(d.ticket.status as TicketStatus);
-      setNewPriority(d.ticket.priority);
-    },
   });
+
+  // Sync status/priority selectors when ticket data loads
+  useEffect(() => {
+    if (!data) return;
+    setNewStatus(data.ticket.status as TicketStatus);
+    setNewPriority(data.ticket.priority);
+  }, [data]);
 
   const sendReply = async () => {
     if (!replyText.trim()) { toast.error("Reply cannot be empty"); return; }
@@ -506,15 +509,28 @@ export default function AdminSupportPage() {
     keepPreviousData: true,
   });
 
+  // Separate query for stats — always fetches all statuses regardless of active filter
+  const { data: statsData } = useQuery<{
+    items: SupportTicket[];
+    total: number;
+  }>({
+    queryKey: ["admin-support-stats"],
+    queryFn: () => api.get("/support/admin", {
+      params: { page: 1, per_page: 500 },
+    }).then(r => r.data),
+    staleTime: 30_000,
+  });
+
   const tickets    = data?.items ?? [];
   const totalPages = data?.total_pages ?? 1;
   const total      = data?.total ?? 0;
 
+  const allTickets = statsData?.items ?? [];
   const stats = {
-    open:        tickets.filter(t => t.status === "open").length,
-    in_progress: tickets.filter(t => t.status === "in_progress").length,
-    waiting:     tickets.filter(t => t.status === "waiting_for_customer").length,
-    resolved:    tickets.filter(t => t.status === "resolved").length,
+    open:        allTickets.filter(t => t.status === "open").length,
+    in_progress: allTickets.filter(t => t.status === "in_progress").length,
+    waiting:     allTickets.filter(t => t.status === "waiting_for_customer").length,
+    resolved:    allTickets.filter(t => t.status === "resolved").length,
   };
 
   const filterBtnCls = (active: boolean) =>
@@ -644,6 +660,7 @@ export default function AdminSupportPage() {
           onUpdate={() => {
             refetch();
             qc.invalidateQueries({ queryKey: ["admin-ticket-detail", selectedId] });
+            qc.invalidateQueries({ queryKey: ["admin-support-stats"] });
           }}
         />
       )}

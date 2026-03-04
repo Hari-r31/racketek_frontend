@@ -272,10 +272,10 @@ export default function ReturnsPage() {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  disabled={submitReturn.isPending}
+                  disabled={submitReturn.isLoading}
                   className="btn-primary flex-1"
                 >
-                  {submitReturn.isPending ? "Submitting..." : "Submit Return Request"}
+                  {submitReturn.isLoading ? "Submitting..." : "Submit Return Request"}
                 </button>
                 <button
                   type="button"

@@ -1,7 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import {
-  useState, useEffect, useRef, useMemo, useCallback, memo,
+  useState, useEffect, useRef, useMemo, useCallback, memo, Suspense,
 } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -39,7 +39,7 @@ function ProductSkeleton() {
   );
 }
 
-export default function ProductsPage() {
+function ProductsPageInner() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
@@ -374,5 +374,13 @@ export default function ProductsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <ProductsPageInner />
+    </Suspense>
   );
 }

@@ -129,9 +129,9 @@ export default function SecurityPage() {
             </div>
             {pw.confirm && pw.new !== pw.confirm && <p className="text-xs text-red-500 mt-1">Passwords do not match</p>}
           </div>
-          <button type="submit" disabled={changePwMutation.isPending}
+          <button type="submit" disabled={changePwMutation.isLoading}
             className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-60">
-            {changePwMutation.isPending
+            {changePwMutation.isLoading
               ? <><Loader2 size={15} className="animate-spin" /> Updating…</>
               : <><ShieldCheck size={15} /> Update Password</>}
           </button>
@@ -200,9 +200,9 @@ export default function SecurityPage() {
                 <button onClick={() => { setShowDeleteSection(false); setDeleteConfirm(""); setDeletePassword(""); }}
                   className="flex-1 border border-gray-300 text-gray-700 font-bold py-2.5 rounded-xl hover:bg-gray-50 text-sm">Cancel</button>
                 <button onClick={() => deleteMutation.mutate()}
-                  disabled={deleteConfirm !== "DELETE" || !deletePassword || deleteMutation.isPending}
+                  disabled={deleteConfirm !== "DELETE" || !deletePassword || deleteMutation.isLoading}
                   className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-50 text-sm">
-                  {deleteMutation.isPending
+                  {deleteMutation.isLoading
                     ? <><Loader2 size={14} className="animate-spin" /> Deleting…</>
                     : <><Trash2 size={14} /> Delete Account</>}
                 </button>

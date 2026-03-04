@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo, Suspense } from "react";
 import {
   ShoppingCart, Search, Menu, X, Heart, User,
   ChevronDown, Package, LogOut, Settings, ChevronRight,
@@ -57,7 +57,7 @@ function SearchBox({
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/products/suggestions?q=${encodeURIComponent(value.trim())}&limit=8`
+          `${process.env.NEXT_PUBLIC_API_URL}/products/suggestions?q=${encodeURIComponent(value.trim())}&limit=8`
         );
         if (res.ok) { const data: Suggestion[] = await res.json(); setSuggestions(data); setShowSugg(data.length > 0 && focused); }
       } catch { /* silent */ }
@@ -394,7 +394,7 @@ function MobileDrawer({
 /* ══════════════════════════════════════════════════════════════════════════
    NAVBAR
 ══════════════════════════════════════════════════════════════════════════ */
-export default function Navbar() {
+function NavbarInner() {
   const router       = useRouter();
   const pathname     = usePathname();
   const searchParams = useSearchParams();
@@ -685,5 +685,13 @@ export default function Navbar() {
         onLogout={handleLogout} onNav={handleDrawerNav}
       />
     </>
+  );
+}
+
+export default function Navbar() {
+  return (
+    <Suspense fallback={<div className="h-16 bg-white border-b border-gray-200" />}>
+      <NavbarInner />
+    </Suspense>
   );
 }

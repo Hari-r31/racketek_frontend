@@ -186,8 +186,8 @@ export default function AdminCouponsPage() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button type="submit" disabled={createCoupon.isPending} className="btn-primary flex-1">
-                {createCoupon.isPending ? "Creating..." : "Create Coupon"}
+              <button type="submit" disabled={createCoupon.isLoading} className="btn-primary flex-1">
+                {createCoupon.isLoading ? "Creating..." : "Create Coupon"}
               </button>
               <button type="button" onClick={() => { setShowForm(false); reset(); }} className="btn-outline flex-1">
                 Cancel

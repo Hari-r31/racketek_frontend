@@ -508,8 +508,8 @@ export default function SupportPage() {
             </div>
 
             <div className="flex gap-3">
-              <button type="submit" disabled={createTicket.isPending} className="btn-primary flex-1">
-                {createTicket.isPending ? "Submitting…" : "Submit Ticket"}
+              <button type="submit" disabled={createTicket.isLoading} className="btn-primary flex-1">
+                {createTicket.isLoading ? "Submitting…" : "Submit Ticket"}
               </button>
               <button type="button" onClick={() => { setShowForm(false); reset(); setNewTicketImages([]); }} className="btn-outline flex-1">
                 Cancel

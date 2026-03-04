@@ -125,7 +125,7 @@ export default function WishlistPage() {
                       <span className="text-xs font-black text-gray-600 bg-white px-3 py-1.5 rounded-full shadow-sm">Out of Stock</span>
                     </div>
                   )}
-                  <button onClick={() => removeMutation.mutate(product.id)} disabled={removeMutation.isPending}
+                  <button onClick={() => removeMutation.mutate(product.id)} disabled={removeMutation.isLoading}
                     className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
                     <Trash2 size={13} />
                   </button>

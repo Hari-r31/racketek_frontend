@@ -223,10 +223,10 @@ export default function ReviewSection({ productId, productSlug }: Props) {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    disabled={submitReview.isPending}
+                    disabled={submitReview.isLoading}
                     className="btn-primary flex-1"
                   >
-                    {submitReview.isPending ? "Submitting..." : "Submit Review"}
+                    {submitReview.isLoading ? "Submitting..." : "Submit Review"}
                   </button>
                   <button
                     type="button"

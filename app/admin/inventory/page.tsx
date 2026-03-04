@@ -95,7 +95,7 @@ export default function AdminInventoryPage() {
           {pendingEdits > 0 && (
             <button
               onClick={() => bulkUpdateAll.mutate()}
-              disabled={bulkUpdateAll.isPending}
+              disabled={bulkUpdateAll.isLoading}
               className="btn-primary flex items-center gap-2 text-sm"
             >
               <Save size={14} />
@@ -197,8 +197,6 @@ export default function AdminInventoryPage() {
               <div key={i} className="h-14 bg-gray-200 rounded-lg" />
             ))}
           </div>
-        ) : isLoading ? (
-          <table className="w-full"><tbody><SkeletonTable rows={8} cols={7} /></tbody></table>
         ) : products.length === 0 ? (
           <div className="p-16 text-center">
             <Package size={48} className="text-gray-200 mx-auto mb-4" />

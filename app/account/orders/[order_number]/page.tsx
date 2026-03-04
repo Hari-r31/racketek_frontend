@@ -172,7 +172,7 @@ export default function OrderDetailPage() {
                 const reason = prompt("Reason for cancellation (optional):");
                 if (reason !== null) cancelMutation.mutate(reason || "Customer request");
               }}
-              disabled={cancelMutation.isPending}
+              disabled={cancelMutation.isLoading}
               className="w-full flex items-center justify-center gap-2 border border-red-300 text-red-600 rounded-lg py-2.5 text-sm font-medium hover:bg-red-50 transition-colors"
             >
               <XCircle size={16} /> Cancel Order

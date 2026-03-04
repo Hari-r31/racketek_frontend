@@ -222,7 +222,7 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3">
                     <button
                       onClick={() => updateUser.mutate({ id: user.id, payload: { is_active: !user.is_active } })}
-                      disabled={updateUser.isPending}
+                      disabled={updateUser.isLoading}
                       className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
                         user.is_active
                           ? "border-red-200 text-red-600 hover:bg-red-50"

@@ -1,6 +1,6 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, CreditCard, MapPin, Plus } from "lucide-react";
 import api from "@/lib/api";
@@ -55,12 +55,14 @@ export default function CheckoutPage() {
     queryKey: ["addresses"],
     queryFn: () => api.get("/addresses").then((r) => r.data),
     enabled: isAuthenticated,
-    onSuccess: (data) => {
-      const def = data.find((a) => a.is_default);
-      if (def) setSelectedAddress(def.id);
-      else if (data.length > 0) setSelectedAddress(data[0].id);
-    },
   });
+
+  useEffect(() => {
+    if (!addresses) return;
+    const def = addresses.find((a) => a.is_default);
+    if (def) setSelectedAddress(def.id);
+    else if (addresses.length > 0) setSelectedAddress(addresses[0].id);
+  }, [addresses]);
 
   const placeOrder = async () => {
     if (!selectedAddress) {

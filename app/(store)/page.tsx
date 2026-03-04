@@ -66,7 +66,7 @@ export default function HomePage() {
     queryKey: ["homepage"],
     queryFn:  () => api.get("/homepage").then(r => r.data.sections),
     staleTime: 1000 * 60 * 5,   // 5 min
-    gcTime:    1000 * 60 * 10,
+    cacheTime: 1000 * 60 * 10,
   });
 
   /* ── Categories fetch — shared with Navbar, no duplicate ────────────── */
