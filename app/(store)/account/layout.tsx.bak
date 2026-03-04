@@ -1,0 +1,4 @@
+// This page intentionally does nothing.
+// The account section is handled by app/account/ (outside the (store) route group).
+// Having page.tsx here causes a duplicate-path build error.
+// TO FIX: rename/delete this file — it is kept as a comment-only placeholder.

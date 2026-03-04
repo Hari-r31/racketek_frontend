@@ -65,6 +65,9 @@ export default function ReturnsPage() {
     onSuccess: () => {
       toast.success("Return request submitted! We'll review it within 24 hours.");
       qc.invalidateQueries({ queryKey: ["my-returns"] });
+      qc.invalidateQueries({ queryKey: ["eligible-return-orders"] });
+      qc.invalidateQueries({ queryKey: ["orders"] }); // order list status may update
+      qc.invalidateQueries({ queryKey: ["orders-recent"] }); // profile page recent orders
       reset();
       setView("my-returns");
     },

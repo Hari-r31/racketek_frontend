@@ -1,0 +1,4 @@
+// This file is intentionally empty — account pages live at /app/account/
+// Route group (store) should NOT have an account sub-route to avoid path collision.
+// See app/account/page.tsx for the real account page.
+export { default } from "@/app/account/page";

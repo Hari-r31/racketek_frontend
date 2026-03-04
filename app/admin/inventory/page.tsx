@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AlertTriangle, Search, Save, RefreshCw, Package } from "lucide-react";
+import { SkeletonTable } from "@/components/ui/loaders";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -20,7 +21,7 @@ interface InventoryProduct {
 export default function AdminInventoryPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "low" | "out">("low");
+  const [filter, setFilter] = useState<"all" | "low" | "out">("all");
   const [stockEdits, setStockEdits] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState<Record<number, boolean>>({});
 
@@ -33,6 +34,12 @@ export default function AdminInventoryPage() {
     },
   });
 
+  const invalidateAfterStockChange = () => {
+    qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+    qc.invalidateQueries({ queryKey: ["admin-products"] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+  };
+
   const updateStock = async (productId: number) => {
     const newStock = parseInt(stockEdits[productId]);
     if (isNaN(newStock) || newStock < 0) {
@@ -41,8 +48,8 @@ export default function AdminInventoryPage() {
     }
     setSaving((s) => ({ ...s, [productId]: true }));
     try {
-      await api.put(`/products/${productId}`, { stock: newStock });
-      qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+      await api.put(`/admin/products/${productId}`, { stock: newStock });
+      invalidateAfterStockChange();
       setStockEdits((e) => { const n = { ...e }; delete n[productId]; return n; });
       toast.success("Stock updated");
     } catch {
@@ -61,7 +68,7 @@ export default function AdminInventoryPage() {
       return api.post("/admin/inventory/bulk-update", { updates });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+      invalidateAfterStockChange();
       setStockEdits({});
       toast.success(`${Object.keys(stockEdits).length} products updated!`);
     },
@@ -190,6 +197,8 @@ export default function AdminInventoryPage() {
               <div key={i} className="h-14 bg-gray-200 rounded-lg" />
             ))}
           </div>
+        ) : isLoading ? (
+          <table className="w-full"><tbody><SkeletonTable rows={8} cols={7} /></tbody></table>
         ) : products.length === 0 ? (
           <div className="p-16 text-center">
             <Package size={48} className="text-gray-200 mx-auto mb-4" />

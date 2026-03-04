@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,6 +36,8 @@ const schema = z.object({
   status: z.enum(["active", "inactive", "draft", "out_of_stock"]).default("active"),
   is_featured: z.boolean().default(false),
   is_best_seller: z.boolean().default(false),
+  is_returnable: z.boolean().default(true),
+  return_window_days: z.coerce.number().min(1).default(7),
   meta_title: z.string().optional(),
   meta_description: z.string().optional(),
   variants: z.array(variantSchema).default([]),
@@ -43,6 +46,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function EditProductPage() {
   const router = useRouter();
+  const qc     = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -66,7 +70,7 @@ export default function EditProductPage() {
   // Fetch existing product data
   useEffect(() => {
     if (!id) return;
-    api.get(`/admin/products/${id}`)
+    api.get(`/admin/products/${id}`)  // now hits GET /admin/products/{id}
       .then((r) => {
         const p = r.data;
         setProduct(p);
@@ -87,6 +91,8 @@ export default function EditProductPage() {
           status: p.status,
           is_featured: p.is_featured,
           is_best_seller: p.is_best_seller,
+          is_returnable: p.is_returnable ?? true,
+          return_window_days: p.return_window_days ?? 7,
           meta_title: p.meta_title || "",
           meta_description: p.meta_description || "",
           variants: p.variants || [],
@@ -103,6 +109,13 @@ export default function EditProductPage() {
     }
   };
 
+  const invalidateProduct = () => {
+    qc.invalidateQueries({ queryKey: ["admin-products"] });
+    qc.invalidateQueries({ queryKey: ["admin-product", id] });
+    if (product?.slug) qc.invalidateQueries({ queryKey: ["product", product.slug] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -114,6 +127,7 @@ export default function EditProductPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setImages((prev) => [...prev, data]);
+      invalidateProduct();
       toast.success("Image uploaded!");
     } catch {
       toast.error("Image upload failed");
@@ -127,6 +141,7 @@ export default function EditProductPage() {
     try {
       await api.delete(`/products/${id}/images/${imageId}`);
       setImages((prev) => prev.filter((img) => img.id !== imageId));
+      invalidateProduct();
       toast.success("Image removed");
     } catch {
       toast.error("Failed to remove image");
@@ -139,6 +154,7 @@ export default function EditProductPage() {
       setImages((prev) =>
         prev.map((img) => ({ ...img, is_primary: img.id === imageId }))
       );
+      invalidateProduct();
       toast.success("Primary image set");
     } catch {
       toast.error("Failed to set primary image");
@@ -148,7 +164,12 @@ export default function EditProductPage() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      await api.put(`/products/${id}`, data);
+      const { data: updated } = await api.put(`/admin/products/${id}`, data);
+      // Bust every cached query that could show stale product data
+      await qc.invalidateQueries({ queryKey: ["admin-products"] });
+      await qc.invalidateQueries({ queryKey: ["admin-product", id] });
+      await qc.invalidateQueries({ queryKey: ["product", updated.slug] });
+      await qc.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product updated!");
       router.push("/admin/products");
     } catch (e: any) {
@@ -336,7 +357,17 @@ export default function EditProductPage() {
               <input type="checkbox" {...register("is_best_seller")} className="w-4 h-4 text-brand-600 rounded" />
               <span className="text-sm text-gray-700">Best Seller</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" {...register("is_returnable")} className="w-4 h-4 text-brand-600 rounded" />
+              <span className="text-sm text-gray-700">Returnable</span>
+            </label>
           </div>
+          {watch("is_returnable") && (
+            <div className="w-40">
+              <label className="label">Return Window (days)</label>
+              <input type="number" min="1" max="30" {...register("return_window_days")} className="input" />
+            </div>
+          )}
         </div>
 
         {/* ── Variants ─────────────────────────────────────────── */}

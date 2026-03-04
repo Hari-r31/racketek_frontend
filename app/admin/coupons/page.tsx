@@ -13,7 +13,13 @@ import { formatDate, formatPrice } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 const schema = z.object({
-  code: z.string().min(3).max(20).regex(/^[A-Z0-9_-]+$/, "Uppercase letters, numbers, hyphens, underscores only"),
+  code: z
+    .string()
+    .min(3, "Minimum 3 characters")
+    .max(20, "Maximum 20 characters")
+    .regex(/^[A-Z0-9_-]+$/i, "Letters, numbers, hyphens, underscores only")
+    .transform((val) => val.trim().toUpperCase()),
+
   description: z.string().optional(),
   discount_type: z.enum(["percentage", "fixed"]),
   discount_value: z.coerce.number().min(0.01),
@@ -45,10 +51,15 @@ export default function AdminCouponsPage() {
     queryFn: () => api.get("/admin/coupons").then((r) => r.data),
   });
 
+  const invalidateCoupons = () => {
+    qc.invalidateQueries({ queryKey: ["admin-coupons"] });
+    qc.invalidateQueries({ queryKey: ["coupons"] }); // customer coupon validation cache
+  };
+
   const createCoupon = useMutation({
     mutationFn: (data: FormData) => api.post("/admin/coupons", data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-coupons"] });
+      invalidateCoupons();
       toast.success("Coupon created!");
       setShowForm(false);
       reset();
@@ -58,16 +69,13 @@ export default function AdminCouponsPage() {
 
   const deleteCoupon = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/coupons/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-coupons"] });
-      toast.success("Coupon deleted");
-    },
+    onSuccess: () => { invalidateCoupons(); toast.success("Coupon deleted"); },
   });
 
   const toggleCoupon = useMutation({
     mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
       api.put(`/admin/coupons/${id}`, { is_active }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-coupons"] }),
+    onSuccess: () => invalidateCoupons(),
   });
 
   const {

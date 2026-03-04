@@ -2,59 +2,344 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES — light & dark palettes
+   Applied to html element; toggled by adding/removing .dark class on <html>
+═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* surfaces */
+  --surface-0:  255 255 255;   /* bg-white  */
+  --surface-1:  249 250 251;   /* bg-gray-50 */
+  --surface-2:  243 244 246;   /* bg-gray-100 */
+  --surface-3:  229 231 235;   /* bg-gray-200 */
+  --surface-4:  209 213 219;   /* bg-gray-300 */
+
+  /* text */
+  --text-900: 17 24 39;
+  --text-800: 31 41 55;
+  --text-700: 55 65 81;
+  --text-600: 75 85 99;
+  --text-500: 107 114 128;
+  --text-400: 156 163 175;
+
+  /* borders */
+  --border-1: 243 244 246;   /* gray-100 */
+  --border-2: 229 231 235;   /* gray-200 */
+  --border-3: 209 213 219;   /* gray-300 */
+
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+}
+
+html.dark {
+  /* surfaces — deep slate palette */
+  --surface-0:  15 15 23;     /* richest dark */
+  --surface-1:  20 20 31;
+  --surface-2:  28 28 42;
+  --surface-3:  38 38 57;
+  --surface-4:  55 55 78;
+
+  /* text — light */
+  --text-900: 241 245 249;
+  --text-800: 226 232 240;
+  --text-700: 203 213 225;
+  --text-600: 148 163 184;
+  --text-500: 100 116 139;
+  --text-400: 71 85 105;
+
+  /* borders */
+  --border-1: 38 38 57;
+  --border-2: 45 45 68;
+  --border-3: 60 60 90;
+
+  --background: 222 47% 7%;
+  --foreground: 210 40% 95%;
+}
+
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
-  }
-  * {
-    box-sizing: border-box;
-  }
-  html {
-    scroll-behavior: smooth;
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-feature-settings: "kern" 1;
+    background-color: rgb(var(--surface-1));
+    color: rgb(var(--text-900));
+    transition: background-color 0.25s ease, color 0.2s ease;
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPLETE DARK MODE — full utility-class overrides
+   html.dark overrides every common Tailwind color so individual files don't
+   need dark: variants added. All surfaces, text, borders, dividers covered.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Background overrides ─────────────────────────────────────────────── */
+html.dark .bg-white                { background-color: rgb(var(--surface-0)) !important; }
+html.dark .bg-gray-50              { background-color: rgb(var(--surface-1)) !important; }
+html.dark .bg-gray-100             { background-color: rgb(var(--surface-2)) !important; }
+html.dark .bg-gray-200             { background-color: rgb(var(--surface-3)) !important; }
+html.dark .bg-gray-300             { background-color: rgb(var(--surface-4)) !important; }
+
+/* Hover variants */
+html.dark .hover\:bg-white:hover   { background-color: rgb(var(--surface-0)) !important; }
+html.dark .hover\:bg-gray-50:hover { background-color: rgb(var(--surface-1)) !important; }
+html.dark .hover\:bg-gray-100:hover{ background-color: rgb(var(--surface-2)) !important; }
+
+/* ── Text overrides ───────────────────────────────────────────────────── */
+html.dark .text-gray-900           { color: rgb(var(--text-900)) !important; }
+html.dark .text-gray-800           { color: rgb(var(--text-800)) !important; }
+html.dark .text-gray-700           { color: rgb(var(--text-700)) !important; }
+html.dark .text-gray-600           { color: rgb(var(--text-600)) !important; }
+html.dark .text-gray-500           { color: rgb(var(--text-500)) !important; }
+html.dark .text-gray-400           { color: rgb(var(--text-400)) !important; }
+
+html.dark .hover\:text-gray-800:hover { color: rgb(var(--text-800)) !important; }
+html.dark .hover\:text-gray-700:hover { color: rgb(var(--text-700)) !important; }
+html.dark .hover\:text-gray-600:hover { color: rgb(var(--text-600)) !important; }
+html.dark .hover\:text-white:hover    { color: #ffffff !important; }
+
+/* Group-hover text */
+html.dark .group:hover .group-hover\:text-brand-600 { color: #4ade80 !important; }
+
+/* ── Border overrides ─────────────────────────────────────────────────── */
+html.dark .border-gray-100         { border-color: rgb(var(--border-1)) !important; }
+html.dark .border-gray-200         { border-color: rgb(var(--border-2)) !important; }
+html.dark .border-gray-300         { border-color: rgb(var(--border-3)) !important; }
+html.dark .hover\:border-gray-200:hover { border-color: rgb(var(--border-2)) !important; }
+html.dark .hover\:border-gray-300:hover { border-color: rgb(var(--border-3)) !important; }
+
+/* ── Divide overrides ─────────────────────────────────────────────────── */
+html.dark .divide-gray-100 > * + * { border-color: rgb(var(--border-1)) !important; }
+html.dark .divide-gray-200 > * + * { border-color: rgb(var(--border-2)) !important; }
+html.dark .divide-y.divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: rgb(var(--border-1)) !important; }
+html.dark .divide-y.divide-gray-50  > :not([hidden]) ~ :not([hidden]) { border-color: rgb(var(--border-1)) !important; }
+
+/* ── Ring overrides ───────────────────────────────────────────────────── */
+html.dark .focus\:ring-brand-500:focus { --tw-ring-color: #22c55e; }
+
+/* ── Placeholder ──────────────────────────────────────────────────────── */
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: rgb(var(--text-400)); }
+
+/* ── Tailwind component overrides ────────────────────────────────────── */
+html.dark .card {
+  background-color: rgb(var(--surface-0));
+  border-color: rgb(var(--border-1));
+}
+html.dark .input {
+  background-color: rgb(var(--surface-2));
+  border-color: rgb(var(--border-2));
+  color: rgb(var(--text-900));
+}
+html.dark .input:focus {
+  border-color: transparent;
+  --tw-ring-color: #22c55e;
+}
+html.dark .label { color: rgb(var(--text-600)); }
+html.dark .btn-outline {
+  border-color: #22c55e;
+  color: #4ade80;
+}
+html.dark .btn-outline:hover { background-color: rgb(15 60 30 / 0.4); }
+
+/* ── Shadow tones ─────────────────────────────────────────────────────── */
+html.dark .shadow-sm  { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.4) !important; }
+html.dark .shadow-md  { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4) !important; }
+html.dark .shadow-lg  { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4) !important; }
+html.dark .shadow-xl  { box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.55), 0 8px 10px -6px rgb(0 0 0 / 0.45) !important; }
+html.dark .shadow-2xl { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.7) !important; }
+
+/* ── Table headers ────────────────────────────────────────────────────── */
+html.dark thead,
+html.dark .sticky { background-color: rgb(var(--surface-1)) !important; }
+html.dark thead th { color: rgb(var(--text-500)) !important; }
+html.dark tbody tr { border-color: rgb(var(--border-1)) !important; }
+html.dark tbody tr:hover { background-color: rgb(var(--surface-2)) !important; }
+
+/* ── Form selects ─────────────────────────────────────────────────────── */
+html.dark select {
+  background-color: rgb(var(--surface-2));
+  border-color: rgb(var(--border-2));
+  color: rgb(var(--text-900));
+}
+html.dark select option { background-color: rgb(var(--surface-2)); }
+
+/* ── Gradient backgrounds ─────────────────────────────────────────────── */
+html.dark .bg-gradient-to-br.from-brand-50.to-white {
+  background: linear-gradient(135deg, rgb(15 40 25), rgb(var(--surface-0)));
+}
+html.dark .bg-gradient-to-br.from-brand-500.to-brand-700 {
+  /* keep — brand gradient is fine in dark mode */
+}
+html.dark .bg-brand-50  { background-color: rgb(15 40 25) !important; }
+html.dark .bg-brand-100 { background-color: rgb(20 55 35) !important; }
+html.dark .border-brand-100 { border-color: rgb(22 163 74 / 0.25) !important; }
+html.dark .border-brand-200 { border-color: rgb(22 163 74 / 0.35) !important; }
+
+/* ── Amber / warning surfaces ─────────────────────────────────────────── */
+html.dark .bg-amber-50  { background-color: rgb(45 32 8) !important; }
+html.dark .border-amber-200 { border-color: rgb(180 83 9 / 0.4) !important; }
+html.dark .text-amber-800 { color: #fcd34d !important; }
+html.dark .text-amber-600 { color: #f59e0b !important; }
+
+/* ── Red / danger surfaces ────────────────────────────────────────────── */
+html.dark .bg-red-50   { background-color: rgb(45 8 8)   !important; }
+html.dark .border-red-100 { border-color: rgb(220 38 38 / 0.3) !important; }
+html.dark .border-red-200 { border-color: rgb(220 38 38 / 0.4) !important; }
+html.dark .hover\:bg-red-50:hover { background-color: rgb(55 12 12) !important; }
+
+/* ── Blue / info surfaces ─────────────────────────────────────────────── */
+html.dark .bg-blue-50  { background-color: rgb(8 18 45) !important; }
+html.dark .bg-blue-100 { background-color: rgb(12 25 60) !important; }
+html.dark .border-blue-100 { border-color: rgb(37 99 235 / 0.3) !important; }
+
+/* ── Green surfaces ───────────────────────────────────────────────────── */
+html.dark .bg-green-50  { background-color: rgb(8 35 18) !important; }
+html.dark .bg-green-100 { background-color: rgb(12 45 22) !important; }
+
+/* ── Purple surfaces ──────────────────────────────────────────────────── */
+html.dark .bg-purple-50 { background-color: rgb(25 8 45) !important; }
+
+/* ── Product image ────────────────────────────────────────────────────── */
+html.dark .product-image-container { background-color: rgb(var(--surface-2)) !important; }
+
+/* ── Skeleton / pulse ─────────────────────────────────────────────────── */
+html.dark .animate-pulse .bg-gray-200 { background-color: rgb(var(--surface-3)) !important; }
+html.dark .bg-gray-200.rounded-xl.animate-pulse { background-color: rgb(var(--surface-2)) !important; }
+
+/* ── Admin sidebar — keep dark always, override general dark overrides ── */
+html.dark aside.bg-gray-900,
+html.dark .bg-gray-900 { background-color: #0f0f1a !important; }
+html.dark .bg-gray-800 { background-color: #16162a !important; }
+html.dark .hover\:bg-gray-800:hover { background-color: #1e1e35 !important; }
+html.dark .border-gray-800 { border-color: #25253d !important; }
+html.dark .text-gray-300  { color: #b0b0cc !important; }
+
+/* Override the general gray-50 for admin main area */
+html.dark .bg-gray-50.min-h-screen,
+html.dark main.overflow-auto > div { background-color: rgb(var(--surface-1)) !important; }
+
+/* ── Modal / overlay backgrounds ─────────────────────────────────────── */
+html.dark .bg-black\/50  { background-color: rgb(0 0 0 / 0.7) !important; }
+html.dark .bg-white\/60  { background-color: rgb(15 15 23 / 0.7) !important; }
+html.dark .backdrop-blur-\[2px\] { backdrop-filter: blur(2px); }
+
+/* ── Sticky headers in admin orders ──────────────────────────────────── */
+html.dark .shrink-0.bg-white.border-b { background-color: rgb(var(--surface-0)) !important; }
+html.dark .bg-gray-50.border-b { background-color: rgb(var(--surface-1)) !important; }
+
+/* ── Scrollbar dark ───────────────────────────────────────────────────── */
+html.dark ::-webkit-scrollbar-track { background: rgb(var(--surface-1)); }
+html.dark ::-webkit-scrollbar-thumb { background: rgb(var(--surface-3)); }
+html.dark ::-webkit-scrollbar-thumb:hover { background: rgb(var(--surface-4)); }
+
+/* ── Recharts (chart) dark mode ───────────────────────────────────────── */
+html.dark .recharts-cartesian-grid line { stroke: rgb(var(--border-1)) !important; }
+html.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: rgb(var(--surface-0)) !important;
+  border-color: rgb(var(--border-2)) !important;
+  color: rgb(var(--text-900)) !important;
+}
+html.dark .recharts-text { fill: rgb(var(--text-500)) !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   EXISTING STYLES (unchanged)
+───────────────────────────────────────────────────────────────────────── */
 @layer components {
   .btn-primary {
-    @apply bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-outline {
-    @apply border border-brand-600 text-brand-600 hover:bg-brand-50 font-semibold px-6 py-2.5 rounded-lg transition-colors duration-200;
+    @apply border-2 border-brand-600 text-brand-600 hover:bg-brand-50 font-bold px-6 py-2.5 rounded-xl transition-all duration-200;
   }
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100;
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100;
   }
   .input {
-    @apply w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition;
+    @apply w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition bg-white;
   }
   .label {
-    @apply text-sm font-medium text-gray-700 mb-1 block;
+    @apply text-xs font-bold text-gray-600 mb-1 block uppercase tracking-wider;
   }
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold;
   }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f8fafc; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+/* ── Product image zoom ──────────────────────────────────────────────────── */
+.product-image-container:hover .product-image { transform: scale(1.04); }
+.product-image { transition: transform 0.5s cubic-bezier(.25,.46,.45,.94); }
+
+/* ── Announcement bar / marquee ─────────────────────────────────────────── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.animate-marquee {
+  animation: marquee 35s linear infinite;
+  display: inline-flex;
+  will-change: transform;
 }
 
-/* Product image zoom */
-.product-image-container:hover .product-image {
-  transform: scale(1.05);
+/* ── Trust indicators ticker ─────────────────────────────────────────────── */
+@keyframes ticker-left {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
-.product-image {
-  transition: transform 0.4s ease;
+@keyframes ticker-right {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+.animate-ticker-left  { animation: ticker-left  25s linear infinite; display: inline-flex; }
+.animate-ticker-right { animation: ticker-right 25s linear infinite; display: inline-flex; }
+.ticker-paused { animation-play-state: paused !important; }
+
+/* ── Slide up / fade in ─────────────────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity: 0; }              to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.animate-fade-in  { animation: fadeIn  0.3s ease; }
+.animate-slide-up { animation: slideUp 0.3s ease; }
+
+/* ── Deal countdown pulse ───────────────────────────────────────────────── */
+@keyframes countdown-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+.countdown-pulse { animation: countdown-pulse 1s ease-in-out infinite; }
+
+/* ── Video zoom ─────────────────────────────────────────────────────────── */
+.video-zoom-container { overflow: hidden; }
+.video-zoom-container:hover video { transform: scale(1.04); transition: transform 0.6s ease; }
+
+/* ── Nav loading bar ────────────────────────────────────────────────────── */
+@keyframes navprogress {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Hide scrollbar utility ─────────────────────────────────────────────── */
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ── Skeleton shimmer ───────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+html.dark .skeleton-shimmer {
+  background: linear-gradient(90deg, rgb(var(--surface-2)) 25%, rgb(var(--surface-3)) 50%, rgb(var(--surface-2)) 75%);
+  background-size: 1000px 100%;
 }

@@ -47,6 +47,7 @@ function AddressForm({
         : api.post("/addresses", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["addresses"] });
+      qc.invalidateQueries({ queryKey: ["checkout-addresses"] }); // bust checkout address cache
       toast.success(initial ? "Address updated" : "Address added!");
       onClose();
     },
@@ -138,6 +139,7 @@ export default function AddressesPage() {
     mutationFn: (id: number) => api.delete(`/addresses/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["addresses"] });
+      qc.invalidateQueries({ queryKey: ["checkout-addresses"] });
       toast.success("Address deleted");
     },
   });
@@ -184,7 +186,7 @@ export default function AddressesPage() {
             {addresses.map((addr) => (
               <div
                 key={addr.id}
-                className={`border rounded-xl p-4 ${addr.is_default ? "border-brand-300 bg-brand-50/30" : "border-gray-200"}`}
+                className={`border rounded-xl p-4 ${addr.is_default ? "border-brand-300 " : "border-gray-200"}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

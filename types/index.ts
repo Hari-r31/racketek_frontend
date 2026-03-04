@@ -8,6 +8,11 @@ export interface User {
   is_active: boolean;
   is_email_verified: boolean;
   profile_image?: string;
+  date_of_birth?: string;
+  address_line1?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   created_at: string;
 }
 
@@ -53,6 +58,8 @@ export interface Product {
   status: "active" | "inactive" | "out_of_stock" | "draft";
   is_featured: boolean;
   is_best_seller: boolean;
+  is_returnable: boolean;
+  return_window_days: number;
   avg_rating: number;
   review_count: number;
   sold_count: number;
@@ -213,17 +220,75 @@ export interface Coupon {
 }
 
 // ── Support ────────────────────────────────────────────────────────────────
+export type TicketStatus =
+  | "open" | "in_progress" | "waiting_for_customer" | "resolved" | "closed";
+
+export type TicketPriority = "low" | "medium" | "high";
+
+export interface TicketReply {
+  id: number;
+  ticket_id: number;
+  user_id?: number;
+  author_type: "user" | "admin";
+  message: string;
+  image_urls: string[];
+  created_at: string;
+  author_name?: string;
+}
+
+export interface TicketUser {
+  id: number;
+  full_name: string;
+  email: string;
+  phone?: string;
+}
+
 export interface SupportTicket {
   id: number;
+  ticket_number?: string;
   user_id: number;
   order_id?: number;
   subject: string;
   message: string;
-  priority: string;
-  status: string;
+  image_urls: string[];
+  priority: TicketPriority;
+  status: TicketStatus;
   admin_reply?: string;
   resolved_at?: string;
   created_at: string;
+  updated_at: string;
+  user?: TicketUser;
+  replies: TicketReply[];
+}
+
+export interface CustomerRiskSummary {
+  user_id: number;
+  full_name: string;
+  email: string;
+  phone?: string;
+  member_since: string;
+  total_orders: number;
+  total_cancellations: number;
+  total_returns: number;
+  total_refunds: number;
+  lifetime_value: number;
+  last_order_date?: string;
+  risk_tier: "low" | "medium" | "high";
+  risk_reason: string;
+}
+
+export interface OrderSummaryRow {
+  id: number;
+  order_number: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+}
+
+export interface AdminTicketDetail {
+  ticket: SupportTicket;
+  customer_summary: CustomerRiskSummary;
+  order_history: OrderSummaryRow[];
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────

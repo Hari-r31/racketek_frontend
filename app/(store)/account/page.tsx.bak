@@ -1,0 +1,3 @@
+// Not a page — account is served from app/account/ outside this route group.
+// Keeping this file empty (no default export) prevents Next.js from
+// registering a duplicate route for /account.

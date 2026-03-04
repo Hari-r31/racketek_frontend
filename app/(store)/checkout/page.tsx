@@ -1,8 +1,8 @@
 "use client";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, CreditCard, Banknote, MapPin, Plus } from "lucide-react";
+import { ShieldCheck, CreditCard, MapPin, Plus } from "lucide-react";
 import api from "@/lib/api";
 import { Cart, Address, Order } from "@/types";
 import { formatPrice } from "@/lib/utils";
@@ -29,11 +29,19 @@ function loadRazorpay(): Promise<boolean> {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
+  const router      = useRouter();
+  const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuthStore();
   const { setCount } = useCartStore();
+
+  // Called only after a confirmed payment — clears cart UI and cache
+  const onPaymentSuccess = (orderNumber: string) => {
+    setCount(0);
+    queryClient.invalidateQueries({ queryKey: ["cart"] });
+    router.push(`/account/orders/${orderNumber}`);
+  };
   const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cod">("razorpay");
+  const [paymentMethod, setPaymentMethod] = useState<"razorpay">("razorpay");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -69,14 +77,6 @@ export default function CheckoutPage() {
         notes,
       });
 
-      if (paymentMethod === "cod") {
-        await api.post("/payments/cod/confirm", { order_id: order.id });
-        toast.success("Order placed successfully!");
-        setCount(0);
-        router.push(`/account/orders/${order.order_number}`);
-        return;
-      }
-
       // Razorpay flow
       const ok = await loadRazorpay();
       if (!ok) {
@@ -105,10 +105,12 @@ export default function CheckoutPage() {
               razorpay_signature: response.razorpay_signature,
             });
             toast.success("Payment successful! Order confirmed.");
-            setCount(0);
-            router.push(`/account/orders/${order.order_number}`);
+            // Cart is cleared on the backend only after this verified success.
+            // onPaymentSuccess syncs the frontend cart state to match.
+            onPaymentSuccess(order.order_number);
           } catch {
             toast.error("Payment verification failed. Contact support.");
+            setLoading(false);
           }
         },
         prefill: {
@@ -119,8 +121,12 @@ export default function CheckoutPage() {
         theme: { color: "#ea580c" },
         modal: {
           ondismiss: () => {
-            toast.error("Payment cancelled");
+            // User closed Razorpay without paying.
+            // Cart was NOT cleared (backend no longer clears on order create).
+            // Just reset loading and refetch cart to keep count badge accurate.
+            toast("Payment cancelled. Your cart is still saved.", { icon: "🛒" });
             setLoading(false);
+            queryClient.invalidateQueries({ queryKey: ["cart"] });
           },
         },
       };
@@ -159,7 +165,7 @@ export default function CheckoutPage() {
                 Delivery Address
               </h2>
               <Link href="/account/addresses" className="text-xs text-brand-600 hover:underline flex items-center gap-1">
-                <Plus size=12 /> Add New
+                <Plus size={12} /> Add New
               </Link>
             </div>
 
@@ -215,49 +221,16 @@ export default function CheckoutPage() {
               Payment Method
             </h2>
 
-            <div className="space-y-3">
-              <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-colors ${
-                paymentMethod === "razorpay" ? "border-brand-600 bg-brand-50" : "border-gray-200 hover:border-brand-300"
-              }`}>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === "razorpay"}
-                  onChange={() => setPaymentMethod("razorpay")}
-                  className="text-brand-600"
-                />
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-7 bg-blue-100 rounded flex items-center justify-center">
-                    <CreditCard size={14} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Razorpay</p>
-                    <p className="text-xs text-gray-500">Cards, UPI, Net Banking, Wallets</p>
-                  </div>
-                </div>
-              </label>
-
-              <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-colors ${
-                paymentMethod === "cod" ? "border-brand-600 bg-brand-50" : "border-gray-200 hover:border-brand-300"
-              }`}>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === "cod"}
-                  onChange={() => setPaymentMethod("cod")}
-                  className="text-brand-600"
-                />
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-7 bg-green-100 rounded flex items-center justify-center">
-                    <Banknote size={14} className="text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Cash on Delivery</p>
-                    <p className="text-xs text-gray-500">Pay when your order arrives</p>
-                  </div>
-                </div>
-              </label>
+            <div className="flex items-center gap-3 p-4 border border-brand-200 rounded-xl bg-brand-50">
+              <div className="w-10 h-7 bg-blue-100 rounded flex items-center justify-center shrink-0">
+                <CreditCard size={14} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Razorpay</p>
+                <p className="text-xs text-gray-500">Cards, UPI, Net Banking & Wallets — 100% secure</p>
+              </div>
             </div>
+            <p className="text-xs text-gray-400 mt-2">Cash on Delivery is not available. All orders must be prepaid.</p>
           </div>
 
           {/* Notes */}
@@ -336,7 +309,7 @@ export default function CheckoutPage() {
             ) : (
               <>
                 <ShieldCheck size={18} />
-                {paymentMethod === "cod" ? "Place Order (COD)" : "Pay Now"}
+                Pay Now with Razorpay
               </>
             )}
           </button>
