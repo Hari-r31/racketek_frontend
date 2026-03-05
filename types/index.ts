@@ -7,6 +7,7 @@ export interface User {
   role: "customer" | "staff" | "admin" | "super_admin";
   is_active: boolean;
   is_email_verified: boolean;
+  is_phone_verified?: boolean;
   profile_image?: string;
   date_of_birth?: string;
   address_line1?: string;
