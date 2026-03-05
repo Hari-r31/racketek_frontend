@@ -195,12 +195,18 @@ export default function LoginPage() {
                 {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
               </div>
               <div>
-                <label
-                  className="text-xs font-bold uppercase tracking-wider block mb-1"
-                  style={{ color: isDark ? "#94a3b8" : "#4b5563" }}
-                >
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label
+                    className="text-xs font-bold uppercase tracking-wider"
+                    style={{ color: isDark ? "#94a3b8" : "#4b5563" }}
+                  >
+                    Password
+                  </label>
+                  <Link href="/auth/forgot-password"
+                    className="text-xs font-semibold text-brand-500 hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
