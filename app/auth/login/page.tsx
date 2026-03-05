@@ -231,24 +231,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Demo credentials */}
-            <div
-              className="mt-4 p-3 rounded-xl border"
-              style={{
-                backgroundColor: isDark ? "rgba(37,99,235,0.1)" : "#eff6ff",
-                borderColor:     isDark ? "rgba(37,99,235,0.3)" : "#bfdbfe",
-              }}
-            >
-              <p className="text-xs font-semibold mb-1" style={{ color: isDark ? "#93c5fd" : "#1d4ed8" }}>
-                🔑 Demo Credentials
-              </p>
-              <p className="text-xs" style={{ color: isDark ? "#7dd3fc" : "#1e40af" }}>
-                Admin: <span className="font-mono">admin@racketek.com / Admin@123</span>
-              </p>
-              <p className="text-xs" style={{ color: isDark ? "#7dd3fc" : "#1e40af" }}>
-                Staff: <span className="font-mono">staff@racketek.com / Staff@123</span>
-              </p>
-            </div>
 
             <p
               className="text-center text-sm mt-4"
