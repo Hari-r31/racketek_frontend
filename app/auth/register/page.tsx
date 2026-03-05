@@ -194,12 +194,7 @@ export default function RegisterPage() {
                   {...register("full_name")}
                   placeholder="Arjun Sharma"
                   autoFocus
-                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                  style={{
-                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-                    border:          isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-                    color:           isDark ? "#f1f5f9" : "#111827",
-                  }}
+                  className="input"
                 />
                 {errors.full_name && <p className="text-xs text-red-400 mt-1">{errors.full_name.message}</p>}
               </div>
@@ -216,12 +211,7 @@ export default function RegisterPage() {
                   type="email"
                   {...register("email")}
                   placeholder="you@example.com"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                  style={{
-                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-                    border:          isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-                    color:           isDark ? "#f1f5f9" : "#111827",
-                  }}
+                  className="input"
                 />
                 {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
               </div>
@@ -241,12 +231,7 @@ export default function RegisterPage() {
                   type="tel"
                   {...register("phone")}
                   placeholder="+91 98765 43210"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                  style={{
-                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-                    border:          isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-                    color:           isDark ? "#f1f5f9" : "#111827",
-                  }}
+                  className="input"
                 />
               </div>
 
@@ -263,12 +248,7 @@ export default function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     {...register("password")}
                     placeholder="Min 6 characters"
-                    className="w-full rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                    style={{
-                      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-                      border:          isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-                      color:           isDark ? "#f1f5f9" : "#111827",
-                    }}
+                    className="input pr-10"
                   />
                   <button
                     type="button"
@@ -294,12 +274,7 @@ export default function RegisterPage() {
                   type="password"
                   {...register("confirm_password")}
                   placeholder="Repeat password"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                  style={{
-                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-                    border:          isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-                    color:           isDark ? "#f1f5f9" : "#111827",
-                  }}
+                  className="input"
                 />
                 {errors.confirm_password && (
                   <p className="text-xs text-red-400 mt-1">{errors.confirm_password.message}</p>

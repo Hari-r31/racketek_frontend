@@ -90,7 +90,7 @@ export default function TrackOrderPage() {
                 value={orderNumber}
                 onChange={e => setOrderNumber(e.target.value)}
                 placeholder="e.g. RKT-20250101-ABCD"
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-gray-50"
+                className="input py-3 pl-10 pr-4 rounded-2xl"
               />
             </div>
             <button

@@ -121,20 +121,77 @@ html.dark .focus\:ring-brand-500:focus { --tw-ring-color: #22c55e; }
 html.dark input::placeholder,
 html.dark textarea::placeholder { color: rgb(var(--text-400)); }
 
+/* ── Global input / textarea / select catch-all ─────────────────────── */
+/* Covers any input/textarea that doesn't use .input class */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]) {
+  background-color: rgb(var(--surface-2));
+  border-color: rgb(var(--border-2));
+  color: rgb(var(--text-900));
+}
+html.dark textarea {
+  background-color: rgb(var(--surface-2));
+  border-color: rgb(var(--border-2));
+  color: rgb(var(--text-900));
+}
+
+/* date / datetime inputs — force light text & dark bg in dark mode */
+html.dark input[type="date"],
+html.dark input[type="datetime-local"],
+html.dark input[type="time"],
+html.dark input[type="month"] {
+  color-scheme: dark;
+  color: rgb(var(--text-900));
+  background-color: rgb(var(--surface-2));
+}
+
+/* ── Autofill override — kills browser yellow/blue in both themes ────── */
+/* Light mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #f9fafb inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #111827;
+  transition: background-color 5000s ease-in-out 0s;
+}
+/* Dark mode */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark textarea:-webkit-autofill,
+html.dark textarea:-webkit-autofill:hover,
+html.dark textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px rgb(28, 28, 42) inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  caret-color: #f1f5f9;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ── Checkbox & radio dark mode ──────────────────────────────────────── */
+html.dark input[type="checkbox"],
+html.dark input[type="radio"] {
+  accent-color: #16a34a;
+  border-color: rgb(var(--border-3));
+}
+
 /* ── Tailwind component overrides ────────────────────────────────────── */
 html.dark .card {
   background-color: rgb(var(--surface-0));
   border-color: rgb(var(--border-1));
 }
 html.dark .input {
-  background-color: rgb(var(--surface-2));
-  border-color: rgb(var(--border-2));
-  color: rgb(var(--text-900));
+  background-color: rgb(var(--surface-2)) !important;
+  border-color: rgb(var(--border-2)) !important;
+  color: rgb(var(--text-900)) !important;
 }
 html.dark .input:focus {
-  border-color: transparent;
+  border-color: transparent !important;
   --tw-ring-color: #22c55e;
 }
+
 html.dark .label { color: rgb(var(--text-600)); }
 html.dark .btn-outline {
   border-color: #22c55e;
@@ -256,7 +313,7 @@ html.dark .recharts-text { fill: rgb(var(--text-500)) !important; }
     @apply bg-white rounded-2xl shadow-sm border border-gray-100;
   }
   .input {
-    @apply w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition bg-white;
+    @apply w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition bg-gray-50;
   }
   .label {
     @apply text-xs font-bold text-gray-600 mb-1 block uppercase tracking-wider;

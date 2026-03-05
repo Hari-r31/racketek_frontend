@@ -51,8 +51,8 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
           value={value[i] || ""}
           onChange={e => handleChange(i, e.target.value)}
           onKeyDown={e => handleKey(i, e)}
-          className="w-12 h-14 text-center text-xl font-black rounded-xl border-2 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 transition-all bg-gray-50 text-gray-900"
-          style={{ borderColor: value[i] ? "#16a34a" : "#e5e7eb" }}
+          className="w-12 h-14 text-center text-xl font-black rounded-xl border-2 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 transition-all bg-gray-50 text-gray-900 dark:bg-[rgb(28,28,42)] dark:text-gray-100 dark:focus:ring-brand-900"
+          style={{ borderColor: value[i] ? "#16a34a" : undefined }}
         />
       ))}
     </div>
@@ -272,8 +272,7 @@ export default function ForgotPasswordPage() {
                       onKeyDown={e => e.key === "Enter" && sendOtp()}
                       placeholder={method === "email" ? "you@example.com" : "+91 XXXXX XXXXX"}
                       autoFocus
-                      className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                      style={inputSt}
+                      className="input"
                     />
                   </div>
 
@@ -351,8 +350,7 @@ export default function ForgotPasswordPage() {
                           onChange={e => setNewPassword(e.target.value)}
                           placeholder="Minimum 6 characters"
                           autoFocus
-                          className="w-full rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                          style={inputSt}
+                          className="input pr-10"
                         />
                         <button type="button" onClick={() => setShowPw(!showPw)}
                           className="absolute right-3 top-1/2 -translate-y-1/2"
@@ -385,8 +383,7 @@ export default function ForgotPasswordPage() {
                           onChange={e => setConfirmPw(e.target.value)}
                           onKeyDown={e => e.key === "Enter" && resetPassword()}
                           placeholder="Repeat new password"
-                          className="w-full rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                          style={{ ...inputSt, ...(confirmPw && newPassword !== confirmPw ? { borderColor: "#f87171" } : {}) }}
+                          className={`input pr-10 ${confirmPw && newPassword !== confirmPw ? "border-red-400 focus:ring-red-300" : ""}`}
                         />
                         <button type="button" onClick={() => setShowConfirm(!showConfirm)}
                           className="absolute right-3 top-1/2 -translate-y-1/2"

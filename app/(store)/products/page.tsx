@@ -191,7 +191,7 @@ function ProductsPageInner() {
           <select
             value={sort}
             onChange={e => { setSort(e.target.value); router.push(buildUrl({ sort: e.target.value })); }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="input py-2"
           >
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -236,7 +236,7 @@ function ProductsPageInner() {
                   type="text" value={localSearch}
                   onChange={e => setLocalSearch(e.target.value)}
                   placeholder="Product name…"
-                  className="w-full border border-gray-200 rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="input py-2 pl-8 pr-3"
                 />
               </div>
             </div>
@@ -248,7 +248,7 @@ function ProductsPageInner() {
                 <select
                   value={localBrand}
                   onChange={e => setLocalBrand(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                  className="input py-2"
                 >
                   <option value="">All Brands</option>
                   {brandsData.map(b => <option key={b} value={b}>{b}</option>)}

@@ -48,8 +48,8 @@ function OtpInput({ value, onChange, disabled }: { value: string; onChange: (v: 
           value={value[i] || ""}
           onChange={e => handleChange(i, e.target.value)}
           onKeyDown={e => handleKey(i, e)}
-          className="w-10 h-12 text-center text-lg font-black rounded-xl border-2 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all bg-gray-50 text-gray-900 disabled:opacity-40"
-          style={{ borderColor: value[i] ? "#16a34a" : "#e5e7eb" }}
+          className="w-10 h-12 text-center text-lg font-black rounded-xl border-2 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all bg-gray-50 text-gray-900 dark:bg-[rgb(28,28,42)] dark:text-gray-100 dark:focus:ring-brand-900 disabled:opacity-40"
+          style={{ borderColor: value[i] ? "#16a34a" : undefined }}
         />
       ))}
     </div>

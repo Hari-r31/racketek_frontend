@@ -310,7 +310,7 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
                 onChange={e => setReplyText(e.target.value)}
                 rows={3}
                 placeholder="Write your reply…"
-                className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none bg-white"
+                className="input resize-none"
               />
               <ImageUploadRow urls={replyImages} onChange={setReplyImages} />
               <div className="flex items-center gap-2">

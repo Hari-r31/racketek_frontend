@@ -185,12 +185,7 @@ export default function LoginPage() {
                   {...register("email")}
                   placeholder="you@example.com"
                   autoFocus
-                  className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                  style={{
-                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-                    border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-                    color: isDark ? "#f1f5f9" : "#111827",
-                  }}
+                  className="input"
                 />
                 {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
               </div>
@@ -212,12 +207,7 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     {...register("password")}
                     placeholder="Min 6 characters"
-                    className="w-full rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-                    style={{
-                      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-                      border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-                      color: isDark ? "#f1f5f9" : "#111827",
-                    }}
+                    className="input pr-10"
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
