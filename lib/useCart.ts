@@ -83,12 +83,17 @@ export function useCartActions() {
           variant_id: variantId ?? undefined,
           quantity,
         });
+        // Always use the server-returned quantity — the backend may have
+        // merged this into an existing cart item (returning a higher total).
+        const serverQty: number = (data.quantity as number) ?? quantity;
+        const prevQty = useCartItemsStore.getState().getItem(productId, variantId)?.quantity ?? 0;
         const entry: CartItemEntry = {
           cartItemId: data.item_id as number,
-          quantity,
+          quantity: serverQty,
         };
         setItem(productId, variantId, entry);
-        increment(quantity);
+        // Only increment by the real delta so the badge stays accurate.
+        if (serverQty > prevQty) increment(serverQty - prevQty);
         // Invalidate the cart page cache (non-blocking)
         qc.invalidateQueries({ queryKey: ["cart"] });
         return data.item_id;
