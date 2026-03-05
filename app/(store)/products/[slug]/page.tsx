@@ -62,56 +62,11 @@ export default function ProductDetailPage() {
   const { addToCart, updateQty, removeFromCart } = useCartActions();
   const inCart = cartEntry !== null;
 
-  // ── Loading skeleton ──────────────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-pulse">
-          <div className="space-y-3">
-            <div className="aspect-square bg-gray-100 rounded-2xl" />
-            <div className="flex gap-2">
-              {[...Array(5)].map((_, i) => <div key={i} className="w-16 h-16 bg-gray-100 rounded-xl" />)}
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="h-4 bg-gray-100 rounded w-1/4" />
-            <div className="h-8 bg-gray-100 rounded w-3/4" />
-            <div className="h-6 bg-gray-100 rounded w-1/3" />
-            {[...Array(6)].map((_, i) => <div key={i} className="h-4 bg-gray-100 rounded" />)}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ── Stable primitives — must be before any early return so hooks run unconditionally ──
+  const productId    = product?.id ?? 0;
+  const productStock = product?.stock ?? 0;
 
-  if (!product) return (
-    <div className="text-center py-32">
-      <p className="text-6xl mb-6">🏸</p>
-      <h1 className="text-2xl font-black text-gray-900 mb-3">Product not found</h1>
-      <Link href="/products" className="btn-primary inline-block">Browse Products</Link>
-    </div>
-  );
-
-  const discount    = getDiscountPercent(product.price, product.compare_price);
-  const images      = product.images?.length ? product.images : [];
-  const isReturnable = product.is_returnable === true;
-  const returnDays   = product.return_window_days ?? 0;
-
-  const varGroups = product.variants?.reduce((acc, v) => {
-    if (!acc[v.name]) acc[v.name] = [];
-    acc[v.name].push(v);
-    return acc;
-  }, {} as Record<string, typeof product.variants>);
-
-  const selectedVar = product.variants?.find((v) => v.id === variantId);
-  const finalPrice  = product.price + (selectedVar?.price_modifier ?? 0);
-
-  // ── Stable primitives extracted so useCallback deps are always defined ──
-  const productId    = product.id;
-  const productStock = product.stock;
-
-  // ── Cart action handlers ──────────────────────────────────────────
-
+  // ── Cart action handlers (hooks must not be after conditional returns) ──
   const handleAddToCart = useCallback(async () => {
     if (!isAuthenticated) {
       router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname)}`);
@@ -158,6 +113,50 @@ export default function ProductDetailPage() {
       setBuyNow(false);
     }
   }, [isAuthenticated, inCart, productId, variantId, addQty, addToCart, router]);
+
+  // ── Loading skeleton ──────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-pulse">
+          <div className="space-y-3">
+            <div className="aspect-square bg-gray-100 rounded-2xl" />
+            <div className="flex gap-2">
+              {[...Array(5)].map((_, i) => <div key={i} className="w-16 h-16 bg-gray-100 rounded-xl" />)}
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="h-4 bg-gray-100 rounded w-1/4" />
+            <div className="h-8 bg-gray-100 rounded w-3/4" />
+            <div className="h-6 bg-gray-100 rounded w-1/3" />
+            {[...Array(6)].map((_, i) => <div key={i} className="h-4 bg-gray-100 rounded" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) return (
+    <div className="text-center py-32">
+      <p className="text-6xl mb-6">🏸</p>
+      <h1 className="text-2xl font-black text-gray-900 mb-3">Product not found</h1>
+      <Link href="/products" className="btn-primary inline-block">Browse Products</Link>
+    </div>
+  );
+
+  const discount    = getDiscountPercent(product.price, product.compare_price);
+  const images      = product.images?.length ? product.images : [];
+  const isReturnable = product.is_returnable === true;
+  const returnDays   = product.return_window_days ?? 0;
+
+  const varGroups = product.variants?.reduce((acc, v) => {
+    if (!acc[v.name]) acc[v.name] = [];
+    acc[v.name].push(v);
+    return acc;
+  }, {} as Record<string, typeof product.variants>);
+
+  const selectedVar = product.variants?.find((v) => v.id === variantId);
+  const finalPrice  = product.price + (selectedVar?.price_modifier ?? 0);
 
   async function toggleWishlist() {
     if (!isAuthenticated) { toast.error("Please login"); return; }
