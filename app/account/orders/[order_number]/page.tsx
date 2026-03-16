@@ -2,19 +2,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Package, Truck, MapPin, ChevronLeft, XCircle } from "lucide-react";
+import { Package, Truck, MapPin, ChevronLeft, XCircle, ExternalLink } from "lucide-react";
 import api from "@/lib/api";
 import { Order } from "@/types";
 import { formatDate, formatPrice, getStatusColor } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 const ORDER_STEPS = [
-  { key: "pending", label: "Order Placed" },
-  { key: "paid", label: "Payment Confirmed" },
-  { key: "processing", label: "Processing" },
-  { key: "shipped", label: "Shipped" },
-  { key: "out_for_delivery", label: "Out for Delivery" },
-  { key: "delivered", label: "Delivered" },
+  { key: "pending",          label: "Order Placed"       },
+  { key: "paid",             label: "Payment Confirmed"  },
+  { key: "processing",       label: "Processing"         },
+  { key: "shipped",          label: "Shipped"            },
+  { key: "out_for_delivery", label: "Out for Delivery"   },
+  { key: "delivered",        label: "Delivered"          },
 ];
 
 const STEP_KEYS = ORDER_STEPS.map((s) => s.key);
@@ -34,6 +34,7 @@ export default function OrderDetailPage() {
     onSuccess: () => {
       toast.success("Order cancelled");
       qc.invalidateQueries({ queryKey: ["order", order_number] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (e: any) => toast.error(e.response?.data?.detail || "Cannot cancel"),
   });
@@ -63,17 +64,52 @@ export default function OrderDetailPage() {
           </Link>
           <h2 className="font-black text-gray-900 text-lg">{order.order_number}</h2>
           <span className={`badge ${getStatusColor(order.status)}`}>
-            {order.status.replace("_", " ")}
+            {order.status.replace(/_/g, " ")}
           </span>
         </div>
         <p className="text-gray-500 text-sm ml-8">Placed on {formatDate(order.created_at)}</p>
         {order.estimated_delivery && (
           <p className="text-sm text-gray-500 ml-8 flex items-center gap-1 mt-1">
             <Truck size={14} className="text-brand-500" />
-            Estimated delivery: <span className="font-medium text-gray-800">{formatDate(order.estimated_delivery)}</span>
+            Estimated delivery:{" "}
+            <span className="font-medium text-gray-800">{formatDate(order.estimated_delivery)}</span>
           </p>
         )}
       </div>
+
+      {/* BUG 4 FIX — AWB Tracking Info Panel */}
+      {(order.awb_number || order.tracking_url) && (
+        <div className="card p-5 border-brand-200 border bg-brand-50/30">
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <Truck size={15} className="text-brand-600" />
+            Shipment Tracking
+          </h3>
+          <div className="space-y-2 text-sm">
+            {order.awb_number && (
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 w-32 shrink-0">AWB Number:</span>
+                <span className="font-mono font-bold text-gray-900 bg-white border border-gray-200 px-2.5 py-1 rounded-lg">
+                  {order.awb_number}
+                </span>
+              </div>
+            )}
+            {order.tracking_url && (
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 w-32 shrink-0">Track Package:</span>
+                <a
+                  href={order.tracking_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-brand-600 hover:text-brand-700 font-semibold hover:underline"
+                >
+                  Track on Courier Site
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Progress Tracker */}
       {!isCancelledOrReturned && (
@@ -92,7 +128,7 @@ export default function OrderDetailPage() {
                   >
                     {idx < currentStep ? "✓" : idx + 1}
                   </div>
-                  <p className="text-xs text-center text-gray-500 mt-1 w-16">{step.label}</p>
+                  <p className="text-xs text-center text-gray-500 mt-1 w-16 leading-tight">{step.label}</p>
                 </div>
                 {idx < ORDER_STEPS.length - 1 && (
                   <div
@@ -149,7 +185,13 @@ export default function OrderDetailPage() {
             )}
             <div className="flex justify-between text-gray-600">
               <span>Shipping</span>
-              <span>{order.shipping_cost === 0 ? <span className="text-green-600">FREE</span> : formatPrice(order.shipping_cost)}</span>
+              <span>
+                {order.shipping_cost === 0 ? (
+                  <span className="text-green-600">FREE</span>
+                ) : (
+                  formatPrice(order.shipping_cost)
+                )}
+              </span>
             </div>
             <div className="flex justify-between text-gray-600">
               <span>GST (18%)</span>
@@ -173,7 +215,7 @@ export default function OrderDetailPage() {
                 if (reason !== null) cancelMutation.mutate(reason || "Customer request");
               }}
               disabled={cancelMutation.isLoading}
-              className="w-full flex items-center justify-center gap-2 border border-red-300 text-red-600 rounded-lg py-2.5 text-sm font-medium hover:bg-red-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 border border-red-300 text-red-600 rounded-lg py-2.5 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
             >
               <XCircle size={16} /> Cancel Order
             </button>

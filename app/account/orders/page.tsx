@@ -7,14 +7,18 @@ import api from "@/lib/api";
 import { PaginatedOrders } from "@/types";
 import { formatDate, formatPrice, getStatusColor } from "@/lib/utils";
 
+// BUG 5 FIX: Added "out_for_delivery" filter that was previously missing
 const STATUS_FILTERS = [
-  { value: "",            label: "All Orders"  },
-  { value: "pending",     label: "Pending"     },
-  { value: "paid",        label: "Paid"        },
-  { value: "processing",  label: "Processing"  },
-  { value: "shipped",     label: "Shipped"     },
-  { value: "delivered",   label: "Delivered"   },
-  { value: "cancelled",   label: "Cancelled"   },
+  { value: "",                 label: "All Orders"        },
+  { value: "pending",          label: "Pending"           },
+  { value: "paid",             label: "Paid"              },
+  { value: "processing",       label: "Processing"        },
+  { value: "shipped",          label: "Shipped"           },
+  { value: "out_for_delivery", label: "Out for Delivery"  },
+  { value: "delivered",        label: "Delivered"         },
+  { value: "cancelled",        label: "Cancelled"         },
+  { value: "returned",         label: "Returned"          },
+  { value: "refunded",         label: "Refunded"          },
 ];
 
 export default function OrdersPage() {
@@ -40,7 +44,7 @@ export default function OrdersPage() {
             <span className="text-sm text-gray-400 font-medium">{data.total} order{data.total !== 1 ? "s" : ""}</span>
           )}
         </div>
-        {/* Status filter pills */}
+        {/* Status filter pills — BUG 5 FIX: "Out for Delivery" now included */}
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map(f => (
             <button
@@ -86,7 +90,7 @@ export default function OrdersPage() {
           <Package size={48} className="text-gray-200 mx-auto mb-4" />
           <h3 className="font-bold text-gray-700 mb-2">No orders found</h3>
           <p className="text-gray-400 text-sm mb-6">
-            {status ? `No orders with status "${status}"` : "You haven't placed any orders yet"}
+            {status ? `No orders with status "${STATUS_FILTERS.find(f => f.value === status)?.label ?? status}"` : "You haven't placed any orders yet"}
           </p>
           <Link href="/products" className="btn-primary text-sm">Start Shopping</Link>
         </div>
@@ -107,7 +111,7 @@ export default function OrdersPage() {
                     <p className="font-bold text-sm text-gray-900">{order.order_number}</p>
                     {/* Mobile status badge */}
                     <span className={`sm:hidden badge ${getStatusColor(order.status)}`}>
-                      {order.status.replace("_", " ")}
+                      {order.status.replace(/_/g, " ")}
                     </span>
                   </div>
                   <p className="text-xs text-gray-400">{order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? "s" : ""}</p>
@@ -116,7 +120,7 @@ export default function OrdersPage() {
                 {/* Status — desktop */}
                 <div className="hidden sm:flex w-28 justify-center">
                   <span className={`badge ${getStatusColor(order.status)}`}>
-                    {order.status.replace("_", " ")}
+                    {order.status.replace(/_/g, " ")}
                   </span>
                 </div>
 

@@ -1,11 +1,18 @@
 "use client";
+/**
+ * WishlistPage
+ * BUG 7 FIX: After "Move to Cart", call useWishlistStore.getState().remove(id)
+ *            so the heart icon on all ProductCard components updates instantly.
+ * BUG 8 FIX: After "Remove from Wishlist", call useWishlistStore.getState().remove(id)
+ *            for the same reason — global wishlist state was not being updated.
+ */
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { useCartStore } from "@/store/uiStore";
+import { useCartStore, useWishlistStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 import toast from "react-hot-toast";
 import {
@@ -27,9 +34,9 @@ interface WishlistProduct {
 }
 
 export default function WishlistPage() {
-  const qc              = useQueryClient();
-  const router          = useRouter();
-  const { increment }   = useCartStore();
+  const qc                  = useQueryClient();
+  const router              = useRouter();
+  const { increment }       = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const [addingToCart, setAddingToCart] = useState<Record<number, boolean>>({});
 
@@ -39,18 +46,26 @@ export default function WishlistPage() {
     enabled: isAuthenticated,
   });
 
+  // BUG 8 FIX: Call useWishlistStore.remove(id) in onSuccess so the heart
+  // icon on ProductCard components reflects the removal globally.
   const removeMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/wishlist/${id}`),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      // Update global wishlist icon state immediately
+      useWishlistStore.getState().remove(id);
       qc.invalidateQueries({ queryKey: ["wishlist"] });
       toast.success("Removed from wishlist");
     },
     onError: () => toast.error("Failed to remove"),
   });
 
+  // BUG 7 FIX: Call useWishlistStore.remove(id) in onSuccess so the heart
+  // icon on ProductCard components updates after moving item to cart.
   const moveToCartMutation = useMutation({
     mutationFn: (id: number) => api.post(`/wishlist/${id}/move-to-cart`),
     onSuccess: (_, id) => {
+      // Update global wishlist icon state immediately
+      useWishlistStore.getState().remove(id);
       increment();
       qc.invalidateQueries({ queryKey: ["wishlist"] });
       qc.invalidateQueries({ queryKey: ["cart"] });
@@ -183,7 +198,7 @@ export default function WishlistPage() {
                     </div>
                   )}
 
-                  {/* Remove button */}
+                  {/* Remove button — BUG 8 FIX applied via removeMutation.onSuccess above */}
                   <button
                     onClick={() => removeMutation.mutate(product.id)}
                     disabled={removeMutation.isLoading}
@@ -213,6 +228,7 @@ export default function WishlistPage() {
                       </span>
                     )}
                   </div>
+                  {/* Move to Cart — BUG 7 FIX applied via moveToCartMutation.onSuccess above */}
                   <button
                     onClick={() => {
                       setAddingToCart((p) => ({ ...p, [product.id]: true }));

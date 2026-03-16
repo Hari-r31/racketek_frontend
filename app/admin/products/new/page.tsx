@@ -1,4 +1,9 @@
 "use client";
+/**
+ * Admin New Product Page
+ * BUG 1 FIX:   Added Difficulty Level dropdown (beginner / intermediate / advanced)
+ * FEATURE 2:   Added Gender Category dropdown (male / female / unisex / boys / girls)
+ */
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -42,12 +47,15 @@ const schema = z.object({
   category_id:        z.coerce.number().optional().nullable(),
   meta_title:         z.string().optional(),
   meta_description:   z.string().optional(),
+  // BUG 1 FIX
+  difficulty_level:   z.enum(["beginner","intermediate","advanced",""]).optional(),
+  // FEATURE 2
+  gender:             z.enum(["male","female","unisex","boys","girls",""]).optional(),
   variants:           z.array(variantSchema).default([]),
 });
 
 type FormData = z.infer<typeof schema>;
 
-/* ─── Image state type ───────────────────────────────────────────────────── */
 interface UploadedImage {
   url:        string;
   public_id?: string;
@@ -55,11 +63,9 @@ interface UploadedImage {
   is_primary: boolean;
 }
 
-/* ─── Shared input class ─────────────────────────────────────────────────── */
 const iCls = "w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all bg-white";
 const iErr = "border-red-400 focus:border-red-400 focus:ring-red-400/10";
 
-/* ─── Sub-components ─────────────────────────────────────────────────────── */
 const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 
 function Lbl({ children, required = false }: { children: React.ReactNode; required?: boolean }) {
@@ -86,7 +92,6 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-/* ─── Slug + SKU generators ─────────────────────────────────────────────── */
 function toSlug(name: string) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
@@ -118,7 +123,7 @@ function ImageUploadPanel({
         const { data } = await api.post("/upload", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const isPrimary = images.length === 0; // first image auto-primary
+        const isPrimary = images.length === 0;
         setImages(prev => [
           ...prev,
           { url: data.url, public_id: data.public_id, alt_text: "", is_primary: isPrimary },
@@ -144,7 +149,6 @@ function ImageUploadPanel({
   const removeImage = (idx: number) => {
     setImages(prev => {
       const next = prev.filter((_, i) => i !== idx);
-      // if we removed the primary and there are still images, make first one primary
       if (prev[idx].is_primary && next.length > 0) next[0].is_primary = true;
       return next;
     });
@@ -156,7 +160,6 @@ function ImageUploadPanel({
 
   return (
     <div className="space-y-4">
-      {/* Drop zone */}
       <div
         onDragOver={e => e.preventDefault()}
         onDrop={onDrop}
@@ -181,7 +184,6 @@ function ImageUploadPanel({
         )}
       </div>
 
-      {/* Uploaded images grid */}
       {images.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
@@ -190,44 +192,29 @@ function ImageUploadPanel({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {images.map((img, idx) => (
               <div key={idx} className={`relative rounded-xl overflow-hidden border-2 transition-all ${img.is_primary ? "border-brand-500 shadow-md" : "border-gray-200"}`}>
-                {/* Image */}
                 <div className="relative aspect-square bg-gray-50">
                   <img src={img.url} alt={img.alt_text || "Product image"} className="w-full h-full object-cover" />
                 </div>
-
-                {/* Primary badge */}
                 {img.is_primary && (
                   <div className="absolute top-1.5 left-1.5 bg-brand-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Star size={9} fill="white" /> Primary
                   </div>
                 )}
-
-                {/* Actions */}
                 <div className="absolute top-1.5 right-1.5 flex gap-1">
                   {!img.is_primary && (
-                    <button
-                      type="button"
-                      onClick={() => setPrimary(idx)}
-                      title="Set as primary"
-                      className="w-6 h-6 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-gray-500 hover:text-brand-600 shadow transition-colors"
-                    >
+                    <button type="button" onClick={() => setPrimary(idx)}
+                      className="w-6 h-6 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-gray-500 hover:text-brand-600 shadow transition-colors">
                       <Star size={11} />
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="w-6 h-6 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 shadow transition-colors"
-                  >
+                  <button type="button" onClick={() => removeImage(idx)}
+                    className="w-6 h-6 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 shadow transition-colors">
                     <X size={11} />
                   </button>
                 </div>
-
-                {/* Alt text input */}
                 <div className="p-2 bg-white border-t border-gray-100">
                   <input
-                    type="text"
-                    value={img.alt_text}
+                    type="text" value={img.alt_text}
                     onChange={e => updateAlt(idx, e.target.value)}
                     placeholder="Alt text (optional)"
                     className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-400"
@@ -272,7 +259,6 @@ export default function NewProductPage() {
   const nameValue  = watch("name");
   const brandValue = watch("brand");
 
-  /* ── Category queries ─────────────────────────────────────────────────── */
   const { data: parentCats = [] } = useQuery<any[]>({
     queryKey: ["categories-root"],
     queryFn: () => api.get("/categories?parent_only=true").then(r => r.data),
@@ -284,7 +270,6 @@ export default function NewProductPage() {
     enabled: !!parentCatId,
   });
 
-  /* ── Auto-generate slug + SKU ─────────────────────────────────────────── */
   const autoGenSlug = () => {
     const name = getValues("name");
     if (name) setValue("slug", toSlug(name), { shouldValidate: true });
@@ -296,22 +281,21 @@ export default function NewProductPage() {
     if (name) setValue("sku", toSku(name, brand));
   };
 
-  /* ── Submit ───────────────────────────────────────────────────────────── */
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     setServerError(null);
     try {
       const payload = {
         ...data,
+        // Convert empty string to null for optional enum fields
+        difficulty_level: data.difficulty_level || null,
+        gender: data.gender || null,
         images: images.map(img => ({
-          url:        img.url,
-          public_id:  img.public_id,
-          alt_text:   img.alt_text,
-          is_primary: img.is_primary,
+          url: img.url, public_id: img.public_id,
+          alt_text: img.alt_text, is_primary: img.is_primary,
         })),
       };
       await api.post("/products", payload);
-      // Bust all product caches so lists reflect the new product instantly
       await qc.invalidateQueries({ queryKey: ["admin-products"] });
       await qc.invalidateQueries({ queryKey: ["products"] });
       await qc.invalidateQueries({ queryKey: ["admin-inventory"] });
@@ -319,7 +303,6 @@ export default function NewProductPage() {
       router.push("/admin/products");
     } catch (e: any) {
       const detail = e.response?.data?.detail;
-      // Show a friendly, specific error in the UI
       if (typeof detail === "string") {
         if (detail.toLowerCase().includes("slug")) {
           setServerError("A product with this URL slug already exists. Please use a different slug.");
@@ -333,7 +316,6 @@ export default function NewProductPage() {
       } else {
         setServerError("Failed to create product. Please check all fields and try again.");
       }
-      // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
@@ -372,28 +354,20 @@ export default function NewProductPage() {
 
         {/* ── Basic Info ──────────────────────────────────────────────── */}
         <Card title="Basic Information">
-          {/* Name */}
           <div>
             <Lbl required>Product Name</Lbl>
-            <input
-              {...register("name")}
-              onBlur={autoGenSlug}
+            <input {...register("name")} onBlur={autoGenSlug}
               className={`${iCls} ${errors.name ? iErr : ""}`}
-              placeholder="e.g. Yonex Arcsaber 11 Pro"
-            />
+              placeholder="e.g. Yonex Arcsaber 11 Pro" />
             <ErrMsg msg={errors.name?.message} />
           </div>
-
-          {/* Slug */}
           <div>
             <Lbl required>URL Slug</Lbl>
             <div className="flex gap-2">
-              <input
-                {...register("slug")}
+              <input {...register("slug")}
                 className={`${iCls} font-mono text-sm flex-1 ${errors.slug ? iErr : ""}`}
-                placeholder="yonex-arcsaber-11-pro"
-              />
-              <button type="button" onClick={autoGenSlug} title="Re-generate from name"
+                placeholder="yonex-arcsaber-11-pro" />
+              <button type="button" onClick={autoGenSlug}
                 className="px-3 border border-gray-300 rounded-lg text-gray-500 hover:text-brand-600 hover:border-brand-400 transition-colors">
                 <RefreshCw size={14} />
               </button>
@@ -401,22 +375,16 @@ export default function NewProductPage() {
             <p className="text-[11px] text-gray-400 mt-1">yoursite.com/products/<strong>{watch("slug") || "your-slug"}</strong></p>
             <ErrMsg msg={errors.slug?.message} />
           </div>
-
-          {/* Short description */}
           <div>
             <Lbl>Short Description</Lbl>
             <input {...register("short_description")} className={iCls} placeholder="One-line summary shown in listings" />
           </div>
-
-          {/* Full description */}
           <div>
             <Lbl>Full Description</Lbl>
             <textarea {...register("description")} rows={5}
               className={`${iCls} resize-none leading-relaxed`}
               placeholder="Detailed product description…" />
           </div>
-
-          {/* Brand + SKU */}
           <div className="grid grid-cols-2 gap-5">
             <div>
               <Lbl>Brand</Lbl>
@@ -426,7 +394,7 @@ export default function NewProductPage() {
               <Lbl>SKU</Lbl>
               <div className="flex gap-2">
                 <input {...register("sku")} className={`${iCls} font-mono flex-1`} placeholder="YON-ARC11P-4U5" />
-                <button type="button" onClick={autoGenSku} title="Auto-generate SKU"
+                <button type="button" onClick={autoGenSku}
                   className="px-3 border border-gray-300 rounded-lg text-gray-500 hover:text-brand-600 hover:border-brand-400 transition-colors">
                   <Sparkles size={14} />
                 </button>
@@ -444,7 +412,6 @@ export default function NewProductPage() {
         {/* ── Category ────────────────────────────────────────────────── */}
         <Card title="Category">
           <div className="grid grid-cols-2 gap-5">
-            {/* Parent select — uncontrolled, separate from RHF to avoid reset bug */}
             <div>
               <Lbl>Sport / Parent Category</Lbl>
               <select
@@ -462,8 +429,6 @@ export default function NewProductPage() {
                 ))}
               </select>
             </div>
-
-            {/* Sub-category — registered with RHF */}
             <div>
               <Lbl>Sub-Category</Lbl>
               <select
@@ -520,6 +485,36 @@ export default function NewProductPage() {
             <div>
               <Lbl>Weight (kg)</Lbl>
               <input type="number" step="0.001" {...register("weight")} className={iCls} placeholder="0.085" />
+            </div>
+          </div>
+        </Card>
+
+        {/* ── BUG 1 + FEATURE 2: Classification ────────────────────────── */}
+        <Card title="Classification">
+          <div className="grid grid-cols-2 gap-5">
+            {/* BUG 1 FIX — Difficulty Level */}
+            <div>
+              <Lbl>Difficulty Level</Lbl>
+              <select {...register("difficulty_level")} className={iCls}>
+                <option value="">— Not Set —</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1">Skill level required to use this product</p>
+            </div>
+            {/* FEATURE 2 — Gender Category */}
+            <div>
+              <Lbl>Gender Category</Lbl>
+              <select {...register("gender")} className={iCls}>
+                <option value="">— Not Set —</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="unisex">Unisex</option>
+                <option value="boys">Boys</option>
+                <option value="girls">Girls</option>
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1">Gender classification for apparel / equipment</p>
             </div>
           </div>
         </Card>

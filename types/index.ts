@@ -44,6 +44,10 @@ export interface ProductVariant {
   is_active: boolean;
 }
 
+// BUG 1 FIX + FEATURE 2 FIX: Added difficulty_level and gender to Product type
+export type DifficultyLevel = "beginner" | "intermediate" | "advanced";
+export type GenderCategory  = "male" | "female" | "unisex" | "boys" | "girls";
+
 export interface Product {
   id: number;
   name: string;
@@ -65,6 +69,10 @@ export interface Product {
   review_count: number;
   sold_count: number;
   tags?: string[];
+  // BUG 1 FIX
+  difficulty_level?: DifficultyLevel;
+  // FEATURE 2 FIX
+  gender?: GenderCategory;
   images: ProductImage[];
   variants: ProductVariant[];
   created_at: string;
@@ -128,6 +136,7 @@ export interface OrderItem {
   total_price: number;
 }
 
+// BUG 4 FIX: Added awb_number and tracking_url to Order interface
 export interface Order {
   id: number;
   order_number: string;
@@ -140,6 +149,9 @@ export interface Order {
   notes?: string;
   estimated_delivery?: string;
   delivered_at?: string;
+  // BUG 4 FIX
+  awb_number?: string;
+  tracking_url?: string;
   items: OrderItem[];
   created_at: string;
 }

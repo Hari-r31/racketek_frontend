@@ -1,4 +1,9 @@
 "use client";
+/**
+ * ReviewSection.tsx
+ * BUG 6 FIX: Changed api.post(`/reviews/${productId}`, ...) to api.post(`/reviews`, {..., product_id: productId})
+ * The correct endpoint is POST /reviews with product_id in the body, not in the URL path.
+ */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -87,7 +92,6 @@ interface ReviewsData {
   rating_breakdown: Record<string, number>;
 }
 
-// Extended review with user info
 interface ReviewWithUser extends Review {
   user?: { full_name: string };
 }
@@ -110,9 +114,17 @@ export default function ReviewSection({ productId, productSlug }: Props) {
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
+  // BUG 6 FIX: Correct endpoint is POST /reviews with product_id in the body.
+  // Old (broken): api.post(`/reviews/${productId}`, { ...formData, rating: selectedRating })
+  // New (fixed):  api.post(`/reviews`, { product_id: productId, ...formData, rating: selectedRating })
   const submitReview = useMutation({
     mutationFn: (formData: FormData) =>
-      api.post(`/reviews/${productId}`, { ...formData, rating: selectedRating }),
+      api.post(`/reviews`, {
+        product_id: productId,
+        rating: selectedRating,
+        title: formData.title,
+        body: formData.body,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reviews", productId] });
       qc.invalidateQueries({ queryKey: ["product", productSlug] });
@@ -121,8 +133,14 @@ export default function ReviewSection({ productId, productSlug }: Props) {
       setSelectedRating(0);
       setShowForm(false);
     },
-    onError: (e: any) =>
-      toast.error(e.response?.data?.detail || "Failed to submit review"),
+    onError: (e: any) => {
+      const detail = e.response?.data?.detail;
+      if (typeof detail === "string") {
+        toast.error(detail);
+      } else {
+        toast.error("Failed to submit review. Please try again.");
+      }
+    },
   });
 
   const reviews: ReviewWithUser[] = (data?.reviews as ReviewWithUser[]) || [];
@@ -271,7 +289,6 @@ export default function ReviewSection({ productId, productSlug }: Props) {
           ) : (
             reviews.map((r) => (
               <div key={r.id} className="card p-5">
-                {/* Reviewer info */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center text-sm font-bold">

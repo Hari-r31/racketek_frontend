@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Plus, Search, Edit3, Trash2, Eye, EyeOff,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown,
+  Upload,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -56,7 +57,6 @@ export default function AdminProductsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [sort, setSort]         = useState<SortState>({ field: "created_at", dir: "desc" });
 
-  // Fire API only after 400 ms of inactivity
   const search = useDebounce(searchInput, 400);
 
   const handleSort = (field: string) => {
@@ -97,11 +97,21 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Header — FEATURE 1: Added Bulk Upload button */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black text-gray-900">Products</h1>
-        <Link href="/admin/products/new" className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={15} /> Add Product
-        </Link>
+        <div className="flex items-center gap-3">
+          {/* FEATURE 1 FIX — Bulk Upload button */}
+          <Link
+            href="/admin/products/bulk-upload"
+            className="flex items-center gap-2 text-sm border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            <Upload size={14} /> Bulk Upload
+          </Link>
+          <Link href="/admin/products/new" className="btn-primary flex items-center gap-2 text-sm">
+            <Plus size={15} /> Add Product
+          </Link>
+        </div>
       </div>
 
       {/* Search */}
