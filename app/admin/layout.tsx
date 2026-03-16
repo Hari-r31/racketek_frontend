@@ -24,6 +24,7 @@ const NAV = [
   { href: "/admin/inventory",   label: "Inventory",  icon: Warehouse },
   { href: "/admin/categories",  label: "Categories", icon: FolderTree },
   { href: "/admin/support",     label: "Support",    icon: HeadphonesIcon },
+  { href: "/admin/settings",    label: "Settings",   icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -92,7 +93,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
           {/* Bottom section */}
           <div className="p-3 border-t border-gray-800 space-y-1">
-            {/* Theme toggle row — synced with navbar across entire app */}
             <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-800/60 border border-gray-700/50">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 font-semibold tracking-wide">
