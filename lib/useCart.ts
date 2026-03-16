@@ -1,27 +1,18 @@
 "use client";
 /**
  * useCart.ts  —  Unified cart hooks
- * ==================================
  *
- * Three named exports:
+ * FIX #10 / #11: addToCart now calls resyncFromServer() after the API
+ * call succeeds, so the ["cart"] React-Query cache is immediately
+ * populated with fresh data from the server.  Components that navigate
+ * to /cart right after adding an item (Go to Cart, Buy Now) will find
+ * the cache already warm and show the correct items without a manual
+ * refresh.
  *
- *   useCartItem(productId, variantId?)
- *     → Reactive selector. Returns CartItemEntry | null.
- *       Re-renders the calling component only when THIS product's cart
- *       entry changes — not on unrelated cart mutations.
- *
- *   useCartActions()
- *     → Stable action callbacks: addToCart, updateQty, removeFromCart.
- *       Every action updates the Zustand store optimistically and then
- *       fires the API call. On failure it rolls back and re-syncs from
- *       the server.
- *
- *   useCartSync()
- *     → Reads the React-Query ["cart"] cache and hydrates the Zustand
- *       store whenever the cache changes. Call this once at the layout
- *       level (CartInitializer does it for you).
- *
- * Nothing here duplicates cart state — the Zustand store IS the state.
+ * Previously invalidateQueries() was used, which marks the cache stale
+ * but does NOT refetch immediately — the cart page would mount with an
+ * empty stale cache and only fill in after the background refetch
+ * finished (causing the "empty cart until refresh" symptom).
  */
 
 import { useCallback } from "react";
@@ -33,14 +24,6 @@ import { useCartStore } from "@/store/uiStore";
 import { useCartItemsStore, CartItemEntry } from "@/store/cartStore";
 
 // ── 1. Reactive per-product selector ──────────────────────────────────────
-
-/**
- * Returns the live CartItemEntry for a (product, variant) pair, or null
- * if the product is not currently in the cart.
- *
- * The selector is scoped to the specific key so the component only
- * re-renders when its own item changes.
- */
 export function useCartItem(
   productId: number,
   variantId?: number | null,
@@ -51,26 +34,31 @@ export function useCartItem(
 }
 
 // ── 2. Unified action hooks ────────────────────────────────────────────────
-
 export function useCartActions() {
   const qc = useQueryClient();
   const { increment, decrement, setCount } = useCartStore();
-  const { setItem, removeItem, hydrate, items } = useCartItemsStore();
+  const { setItem, removeItem, hydrate } = useCartItemsStore();
 
-  // ── Internal: re-fetch cart and re-seed everything ──────────────────
+  // ── Internal: fetch cart from server and seed EVERYTHING synchronously ──
+  // This is the key fix for #10/#11: we await this after every mutation
+  // so the ["cart"] cache is warm before any navigation happens.
   const resyncFromServer = useCallback(async () => {
     try {
       const { data } = await api.get<Cart>("/cart");
+      // Seed the Zustand item map
       hydrate(data.items ?? []);
+      // Sync the navbar badge count
       const active = (data.items ?? []).filter((i) => !i.save_for_later);
       setCount(active.reduce((s, i) => s + i.quantity, 0));
+      // Write into the React-Query cache so /cart page gets fresh data
+      // immediately on mount without an extra network round-trip.
       qc.setQueryData<Cart>(["cart"], data);
     } catch {
-      /* network failure — leave stale state, user will see stale count */
+      // Network failure — leave stale state; badge may be off by a beat
     }
   }, [hydrate, setCount, qc]);
 
-  // ── addToCart ───────────────────────────────────────────────────────
+  // ── addToCart ────────────────────────────────────────────────────────
   const addToCart = useCallback(
     async (
       productId: number,
@@ -83,29 +71,35 @@ export function useCartActions() {
           variant_id: variantId ?? undefined,
           quantity,
         });
-        // Always use the server-returned quantity — the backend may have
-        // merged this into an existing cart item (returning a higher total).
+
         const serverQty: number = (data.quantity as number) ?? quantity;
-        const prevQty = useCartItemsStore.getState().getItem(productId, variantId)?.quantity ?? 0;
+        const prevQty =
+          useCartItemsStore.getState().getItem(productId, variantId)?.quantity ?? 0;
+
+        // Optimistic Zustand update (instant UI)
         const entry: CartItemEntry = {
           cartItemId: data.item_id as number,
           quantity: serverQty,
         };
         setItem(productId, variantId, entry);
-        // Only increment by the real delta so the badge stays accurate.
         if (serverQty > prevQty) increment(serverQty - prevQty);
-        // Invalidate the cart page cache (non-blocking)
-        qc.invalidateQueries({ queryKey: ["cart"] });
+
+        // FIX #10/#11: resync cart from server so ["cart"] cache is
+        // immediately populated.  This means the cart page will show
+        // the correct items the moment it mounts, even if the user
+        // navigates there right after this call resolves.
+        await resyncFromServer();
+
         return data.item_id;
       } catch (e: any) {
         toast.error(e?.response?.data?.detail || "Failed to add to cart");
         return null;
       }
     },
-    [setItem, increment, qc],
+    [setItem, increment, resyncFromServer],
   );
 
-  // ── updateQty ───────────────────────────────────────────────────────
+  // ── updateQty ────────────────────────────────────────────────────────
   const updateQty = useCallback(
     async (
       productId: number,
@@ -114,7 +108,7 @@ export function useCartActions() {
       oldQty: number,
       newQty: number,
     ): Promise<void> => {
-      // Optimistic update
+      // Optimistic update first
       setItem(productId, variantId, { cartItemId, quantity: newQty });
       const delta = newQty - oldQty;
       if (delta > 0) increment(delta);
@@ -122,7 +116,8 @@ export function useCartActions() {
 
       try {
         await api.put(`/cart/items/${cartItemId}`, { quantity: newQty });
-        qc.invalidateQueries({ queryKey: ["cart"] });
+        // Resync so cart page cache stays fresh
+        await resyncFromServer();
       } catch {
         // Rollback
         setItem(productId, variantId, { cartItemId, quantity: oldQty });
@@ -131,10 +126,10 @@ export function useCartActions() {
         toast.error("Could not update cart");
       }
     },
-    [setItem, increment, decrement, qc],
+    [setItem, increment, decrement, resyncFromServer],
   );
 
-  // ── removeFromCart ──────────────────────────────────────────────────
+  // ── removeFromCart ────────────────────────────────────────────────────
   const removeFromCart = useCallback(
     async (
       productId: number,
@@ -148,25 +143,20 @@ export function useCartActions() {
 
       try {
         await api.delete(`/cart/items/${cartItemId}`);
-        qc.invalidateQueries({ queryKey: ["cart"] });
+        await resyncFromServer();
       } catch {
         // Rollback by re-fetching server state
         await resyncFromServer();
         toast.error("Could not remove item");
       }
     },
-    [removeItem, decrement, resyncFromServer, qc],
+    [removeItem, decrement, resyncFromServer],
   );
 
   return { addToCart, updateQty, removeFromCart, resyncFromServer };
 }
 
 // ── 3. Cart sync hook (used by CartInitializer) ───────────────────────────
-
-/**
- * Watches the React-Query ["cart"] cache and keeps the Zustand
- * cartItemsStore hydrated. Call once per layout — not per component.
- */
 export function useCartSync(cart: Cart | undefined, isAuthenticated: boolean) {
   const { hydrate, clear } = useCartItemsStore();
   const { setCount } = useCartStore();

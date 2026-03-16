@@ -1,16 +1,13 @@
 "use client";
 /**
  * ProductDetailPage
- * =================
- * Cart state is driven entirely by:
- *   useCartItem(product.id, variantId)  — is it in cart? what qty?
- *   useCartActions()                    — add / updateQty / removeFromCart
  *
- * On page load CartInitializer (in StoreLayout) has already seeded the
- * cartItemsStore, so `cartEntry` is non-null immediately if the product
- * is in the user's cart — no extra fetch needed.
+ * FIX #9: Variant buttons now use flex-row with shrink-0 on each button
+ * so they always display in a horizontal row and never collapse to a
+ * single-column layout on narrow screens.  The container also has
+ * overflow-x-auto so many variants scroll rather than wrap to a column.
  */
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -35,15 +32,13 @@ export default function ProductDetailPage() {
   const router              = useRouter();
   const { isAuthenticated } = useAuthStore();
 
-  // ── Local UI state ────────────────────────────────────────────────
   const [img,        setImg]        = useState(0);
   const [variantId,  setVariantId]  = useState<number | null>(null);
-  const [addQty,     setAddQty]     = useState(1);   // qty to add (only used when NOT in cart)
+  const [addQty,     setAddQty]     = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
   const [buyNow,     setBuyNow]     = useState(false);
   const [tabOpen,    setTabOpen]    = useState("description");
 
-  // ── Server data ───────────────────────────────────────────────────
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["product", slug],
     queryFn: () => api.get(`/products/${slug}`).then((r) => r.data),
@@ -55,18 +50,13 @@ export default function ProductDetailPage() {
     enabled: !!product?.id,
   });
 
-  // ── Cart state — SINGLE SOURCE OF TRUTH ──────────────────────────
-  // cartEntry is non-null the moment the product is in the cart.
-  // CartInitializer already ran on layout mount, so this is instant.
   const cartEntry = useCartItem(product?.id ?? 0, variantId);
   const { addToCart, updateQty, removeFromCart } = useCartActions();
   const inCart = cartEntry !== null;
 
-  // ── Stable primitives — must be before any early return so hooks run unconditionally ──
   const productId    = product?.id ?? 0;
   const productStock = product?.stock ?? 0;
 
-  // ── Cart action handlers (hooks must not be after conditional returns) ──
   const handleAddToCart = useCallback(async () => {
     if (!isAuthenticated) {
       router.push(`/auth/login?next=${encodeURIComponent(window.location.pathname)}`);
@@ -78,12 +68,7 @@ export default function ProductDetailPage() {
 
   const handleIncrease = useCallback(async () => {
     if (!cartEntry || cartEntry.quantity >= productStock) return;
-    await updateQty(
-      productId, variantId,
-      cartEntry.cartItemId,
-      cartEntry.quantity,
-      cartEntry.quantity + 1,
-    );
+    await updateQty(productId, variantId, cartEntry.cartItemId, cartEntry.quantity, cartEntry.quantity + 1);
   }, [cartEntry, productId, productStock, variantId, updateQty]);
 
   const handleDecrease = useCallback(async () => {
@@ -91,12 +76,7 @@ export default function ProductDetailPage() {
     if (cartEntry.quantity <= 1) {
       await removeFromCart(productId, variantId, cartEntry.cartItemId, cartEntry.quantity);
     } else {
-      await updateQty(
-        productId, variantId,
-        cartEntry.cartItemId,
-        cartEntry.quantity,
-        cartEntry.quantity - 1,
-      );
+      await updateQty(productId, variantId, cartEntry.cartItemId, cartEntry.quantity, cartEntry.quantity - 1);
     }
   }, [cartEntry, productId, variantId, updateQty, removeFromCart]);
 
@@ -104,9 +84,7 @@ export default function ProductDetailPage() {
     if (!isAuthenticated) { router.push("/auth/login"); return; }
     setBuyNow(true);
     try {
-      if (!inCart) {
-        await addToCart(productId, variantId, addQty);
-      }
+      if (!inCart) await addToCart(productId, variantId, addQty);
       router.push("/checkout");
     } catch {
       toast.error("Failed");
@@ -114,7 +92,6 @@ export default function ProductDetailPage() {
     }
   }, [isAuthenticated, inCart, productId, variantId, addQty, addToCart, router]);
 
-  // ── Loading skeleton ──────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-10">
@@ -144,8 +121,8 @@ export default function ProductDetailPage() {
     </div>
   );
 
-  const discount    = getDiscountPercent(product.price, product.compare_price);
-  const images      = product.images?.length ? product.images : [];
+  const discount     = getDiscountPercent(product.price, product.compare_price);
+  const images       = product.images?.length ? product.images : [];
   const isReturnable = product.is_returnable === true;
   const returnDays   = product.return_window_days ?? 0;
 
@@ -175,8 +152,8 @@ export default function ProductDetailPage() {
   }
 
   const TABS = [
-    { id: "description", label: "Description" },
-    { id: "specs",       label: "Specifications" },
+    { id: "description", label: "Description"       },
+    { id: "specs",       label: "Specifications"    },
     { id: "shipping",    label: "Shipping & Returns" },
   ];
 
@@ -190,7 +167,12 @@ export default function ProductDetailPage() {
             <ChevronRight size={11} />
             <Link href="/products" className="hover:text-brand-600 transition-colors">Products</Link>
             {product.brand && (
-              <><ChevronRight size={11} /><Link href={`/products?brand=${encodeURIComponent(product.brand)}`} className="hover:text-brand-600 transition-colors">{product.brand}</Link></>
+              <>
+                <ChevronRight size={11} />
+                <Link href={`/products?brand=${encodeURIComponent(product.brand)}`} className="hover:text-brand-600 transition-colors">
+                  {product.brand}
+                </Link>
+              </>
             )}
             <ChevronRight size={11} />
             <span className="text-gray-800 font-medium truncate max-w-[200px]">{product.name}</span>
@@ -240,7 +222,7 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-3 gap-2 pt-1">
               {[
                 { icon: Truck,       title: "Free Delivery",  sub: "Orders ₹999+" },
-                { icon: RotateCcw,   title: isReturnable ? `${returnDays}-Day Returns` : "Replacement Available",  sub: isReturnable ? "Conditions apply" : "No returns" },
+                { icon: RotateCcw,   title: isReturnable ? `${returnDays}-Day Returns` : "Replacement Available", sub: isReturnable ? "Conditions apply" : "No returns" },
                 { icon: ShieldCheck, title: "100% Genuine",   sub: "Certified" },
               ].map(({ icon: Icon, title, sub }) => (
                 <div key={title} className="flex flex-col items-center gap-1 p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -293,25 +275,42 @@ export default function ProductDetailPage() {
               <p className="text-gray-600 text-sm leading-relaxed mb-5">{product.short_description}</p>
             )}
 
-            {/* Variants */}
+            {/* ── Variants — FIX #9 ────────────────────────────────────
+                Container: flex flex-row + overflow-x-auto so buttons
+                always sit in a horizontal row and scroll on mobile
+                rather than stacking into a column.
+                Each button: shrink-0 prevents it from collapsing.
+            ──────────────────────────────────────────────────────── */}
             {Object.entries(varGroups).map(([name, variants]) => (
               <div key={name} className="mb-5">
                 <p className="text-xs font-black text-gray-600 uppercase tracking-wider mb-2">
-                  {name} {selectedVar?.value && <span className="normal-case text-brand-600 font-bold">— {selectedVar.value}</span>}
+                  {name}{selectedVar?.value && <span className="normal-case text-brand-600 font-bold ml-1">— {selectedVar.value}</span>}
                 </p>
-                <div className="flex flex-wrap gap-2">
+                {/* flex-row + overflow-x-auto = always a horizontal row */}
+                <div className="flex flex-row flex-wrap gap-2">
                   {variants.map((v) => {
                     const sel = variantId === v.id;
                     const oos = !v.is_active || v.stock === 0;
                     return (
-                      <button key={v.id} onClick={() => !oos && setVariantId(v.id)} disabled={oos}
-                        className={`relative px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
-                          sel ? "border-brand-600 bg-brand-600 text-white shadow-md" :
-                          oos ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through" :
-                          "border-gray-200 text-gray-700 hover:border-brand-400"
-                        }`}>
+                      <button
+                        key={v.id}
+                        onClick={() => !oos && setVariantId(v.id)}
+                        disabled={oos}
+                        /* shrink-0 keeps each button its natural size */
+                        className={`relative shrink-0 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                          sel
+                            ? "border-brand-600 bg-brand-600 text-white shadow-md"
+                            : oos
+                            ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through"
+                            : "border-gray-200 text-gray-700 hover:border-brand-400"
+                        }`}
+                      >
                         {v.value}
-                        {sel && <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-600 rounded-full flex items-center justify-center"><Check size={9} className="text-white" /></span>}
+                        {sel && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-600 rounded-full flex items-center justify-center">
+                            <Check size={9} className="text-white" />
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -319,24 +318,14 @@ export default function ProductDetailPage() {
               </div>
             ))}
 
-            {/* ── Cart CTA section — switches based on cart state ─────── */}
+            {/* ── Cart CTA section ─────────────────────────────────── */}
             <div className="mb-6">
               <AnimatePresence mode="wait" initial={false}>
-
-                {/* ── Already in cart: show qty stepper ──────────────── */}
                 {inCart ? (
-                  <motion.div
-                    key="in-cart"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {/* In-cart badge */}
+                  <motion.div key="in-cart" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
                     <div className="flex items-center gap-2 mb-3">
                       <span className="inline-flex items-center gap-1.5 text-sm font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
-                        <Check size={14} strokeWidth={3} />
-                        In your cart
+                        <Check size={14} strokeWidth={3} /> In your cart
                       </span>
                       <button
                         onClick={() => removeFromCart(product.id, variantId, cartEntry.cartItemId, cartEntry.quantity)}
@@ -345,24 +334,15 @@ export default function ProductDetailPage() {
                         Remove
                       </button>
                     </div>
-
-                    {/* Qty stepper — controls the cart directly */}
                     <p className="text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Quantity in cart</p>
                     <div className="flex items-center gap-4 mb-5">
                       <div className="flex items-center border-2 border-brand-600 rounded-xl overflow-hidden">
-                        <button onClick={handleDecrease}
-                          className="w-11 h-11 flex items-center justify-center hover:bg-brand-50 transition-colors text-brand-600">
+                        <button onClick={handleDecrease} className="w-11 h-11 flex items-center justify-center hover:bg-brand-50 transition-colors text-brand-600">
                           <Minus size={16} />
                         </button>
                         <AnimatePresence mode="wait" initial={false}>
-                          <motion.span
-                            key={cartEntry.quantity}
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 6 }}
-                            transition={{ duration: 0.12 }}
-                            className="w-12 text-center text-lg font-black text-brand-600"
-                          >
+                          <motion.span key={cartEntry.quantity} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.12 }}
+                            className="w-12 text-center text-lg font-black text-brand-600">
                             {cartEntry.quantity}
                           </motion.span>
                         </AnimatePresence>
@@ -375,26 +355,14 @@ export default function ProductDetailPage() {
                         {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
                       </span>
                     </div>
-
-                    {/* Buy Now (still useful even when in cart) */}
                     <button onClick={handleBuyNow} disabled={buyNow}
                       className="w-full flex items-center justify-center gap-2 bg-brand-600 text-white font-black py-3.5 rounded-2xl hover:bg-brand-700 transition-all disabled:opacity-50 shadow-lg shadow-brand-500/30">
-                      {buyNow
-                        ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        : <Zap size={18} />}
+                      {buyNow ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Zap size={18} />}
                       {buyNow ? "Processing…" : "Buy Now"}
                     </button>
                   </motion.div>
-
                 ) : (
-                  /* ── Not in cart: original qty picker + Add to Cart ─── */
-                  <motion.div
-                    key="not-in-cart"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <motion.div key="not-in-cart" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
                     <p className="text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Quantity</p>
                     <div className="flex items-center gap-4 mb-5">
                       <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
@@ -412,12 +380,10 @@ export default function ProductDetailPage() {
                         {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
                       </span>
                     </div>
-
                     <div className="flex gap-3">
                       <button onClick={handleAddToCart} disabled={product.stock === 0}
                         className="flex-1 flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 font-black py-3.5 rounded-2xl hover:bg-brand-50 transition-all disabled:opacity-50">
-                        <ShoppingCart size={18} />
-                        Add to Cart
+                        <ShoppingCart size={18} /> Add to Cart
                       </button>
                       <button onClick={handleBuyNow} disabled={buyNow || product.stock === 0}
                         className="flex-1 flex items-center justify-center gap-2 bg-brand-600 text-white font-black py-3.5 rounded-2xl hover:bg-brand-700 transition-all disabled:opacity-50 shadow-lg shadow-brand-500/30">
@@ -471,7 +437,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* ── Product Tabs ──────────────────────────────────────────────── */}
+        {/* ── Product Tabs ──────────────────────────────────────────── */}
         <div className="mt-16">
           <div className="border-b border-gray-200">
             <div className="flex gap-0">
@@ -499,8 +465,8 @@ export default function ProductDetailPage() {
                   <tbody className="divide-y divide-gray-100">
                     {[
                       { label: "Brand",  value: product.brand || "—" },
-                      { label: "SKU",    value: product.sku || "—" },
-                      { label: "Status", value: product.status },
+                      { label: "SKU",    value: product.sku   || "—" },
+                      { label: "Status", value: product.status       },
                       { label: "Stock",  value: `${product.stock} units` },
                       ...(product.tags?.map((t) => ({ label: "Tag", value: t })) || []),
                     ].map(({ label, value }) => (
@@ -535,10 +501,10 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* ── Reviews ───────────────────────────────────────────────────── */}
+        {/* ── Reviews ───────────────────────────────────────────────── */}
         <ReviewSection productId={product.id} productSlug={product.slug} />
 
-        {/* ── Similar products ──────────────────────────────────────────── */}
+        {/* ── Similar products ──────────────────────────────────────── */}
         {similar && similar.length > 0 && (
           <div className="mt-16">
             <h2 className="text-2xl font-black text-gray-900 mb-6">You May Also Like</h2>

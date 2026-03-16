@@ -1,4 +1,13 @@
 "use client";
+/**
+ * CheckoutPage
+ *
+ * FIX #2 (checkout coupon): POST /orders now includes coupon_code taken
+ * from cart.coupon_code so the backend can validate + apply the discount
+ * when creating the order.  Previously the payload omitted coupon_code
+ * entirely, meaning the discount shown on-screen was ignored on the
+ * actual order and the final charged amount was always the full price.
+ */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,12 +18,11 @@ import { formatPrice } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/uiStore";
+import { useCartItemsStore } from "@/store/cartStore";
 import Link from "next/link";
 
 declare global {
-  interface Window {
-    Razorpay: any;
-  }
+  interface Window { Razorpay: any; }
 }
 
 function loadRazorpay(): Promise<boolean> {
@@ -22,7 +30,7 @@ function loadRazorpay(): Promise<boolean> {
     if (window.Razorpay) return resolve(true);
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
+    script.onload  = () => resolve(true);
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
@@ -33,17 +41,20 @@ export default function CheckoutPage() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuthStore();
   const { setCount } = useCartStore();
+  const { clear: clearCartStore } = useCartItemsStore();
 
-  // Called only after a confirmed payment — clears cart UI and cache
   const onPaymentSuccess = (orderNumber: string) => {
+    // Clear client-side cart state after confirmed payment
     setCount(0);
+    clearCartStore();
+    queryClient.setQueryData(["cart"], null);
     queryClient.invalidateQueries({ queryKey: ["cart"] });
     router.push(`/account/orders/${orderNumber}`);
   };
+
   const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"razorpay">("razorpay");
-  const [notes, setNotes] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [notes,           setNotes]           = useState("");
+  const [loading,         setLoading]         = useState(false);
 
   const { data: cart } = useQuery<Cart>({
     queryKey: ["cart"],
@@ -72,14 +83,19 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // Create order
-      const { data: order }: { data: Order } = await api.post("/orders", {
-        address_id: selectedAddress,
-        payment_method: paymentMethod,
+      // FIX #2: include coupon_code from the cart so the backend
+      // re-validates it and applies the discount to the order total.
+      const orderPayload: Record<string, any> = {
+        address_id:     selectedAddress,
+        payment_method: "razorpay",
         notes,
-      });
+      };
+      if (cart?.coupon_code) {
+        orderPayload.coupon_code = cart.coupon_code;
+      }
 
-      // Razorpay flow
+      const { data: order }: { data: Order } = await api.post("/orders", orderPayload);
+
       const ok = await loadRazorpay();
       if (!ok) {
         toast.error("Failed to load payment gateway");
@@ -92,23 +108,21 @@ export default function CheckoutPage() {
       });
 
       const options = {
-        key: rzOrder.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: rzOrder.amount,
-        currency: rzOrder.currency,
-        name: "Racketek Outlet",
+        key:         rzOrder.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount:      rzOrder.amount,
+        currency:    rzOrder.currency,
+        name:        "Racketek Outlet",
         description: `Order #${order.order_number}`,
-        order_id: rzOrder.razorpay_order_id,
+        order_id:    rzOrder.razorpay_order_id,
         handler: async (response: any) => {
           try {
             await api.post("/payments/razorpay/verify", {
-              order_id: order.id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
+              order_id:             order.id,
+              razorpay_order_id:    response.razorpay_order_id,
+              razorpay_payment_id:  response.razorpay_payment_id,
+              razorpay_signature:   response.razorpay_signature,
             });
             toast.success("Payment successful! Order confirmed.");
-            // Cart is cleared on the backend only after this verified success.
-            // onPaymentSuccess syncs the frontend cart state to match.
             onPaymentSuccess(order.order_number);
           } catch {
             toast.error("Payment verification failed. Contact support.");
@@ -116,16 +130,13 @@ export default function CheckoutPage() {
           }
         },
         prefill: {
-          name: user?.full_name,
-          email: user?.email,
+          name:    user?.full_name,
+          email:   user?.email,
           contact: user?.phone,
         },
         theme: { color: "#ea580c" },
         modal: {
           ondismiss: () => {
-            // User closed Razorpay without paying.
-            // Cart was NOT cleared (backend no longer clears on order create).
-            // Just reset loading and refetch cart to keep count badge accurate.
             toast("Payment cancelled. Your cart is still saved.", { icon: "🛒" });
             setLoading(false);
             queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -157,8 +168,9 @@ export default function CheckoutPage() {
       <h1 className="text-2xl font-black text-gray-900 mb-8">Checkout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Address + Payment */}
+        {/* ── Left: Address + Payment ──────────────────────────────── */}
         <div className="lg:col-span-2 space-y-6">
+
           {/* Delivery Address */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
@@ -188,8 +200,7 @@ export default function CheckoutPage() {
                     }`}
                   >
                     <input
-                      type="radio"
-                      name="address"
+                      type="radio" name="address"
                       checked={selectedAddress === addr.id}
                       onChange={() => setSelectedAddress(addr.id)}
                       className="mt-1 text-brand-600"
@@ -222,7 +233,6 @@ export default function CheckoutPage() {
               <CreditCard size={18} className="text-brand-600" />
               Payment Method
             </h2>
-
             <div className="flex items-center gap-3 p-4 border border-brand-200 rounded-xl bg-brand-50">
               <div className="w-10 h-7 bg-blue-100 rounded flex items-center justify-center shrink-0">
                 <CreditCard size={14} className="text-blue-600" />
@@ -232,23 +242,23 @@ export default function CheckoutPage() {
                 <p className="text-xs text-gray-500">Cards, UPI, Net Banking & Wallets — 100% secure</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-2">Cash on Delivery is not available. All orders must be prepaid.</p>
+            <p className="text-xs text-gray-400 mt-2">
+              Cash on Delivery is not available. All orders must be prepaid.
+            </p>
           </div>
 
           {/* Notes */}
           <div className="card p-6">
             <h2 className="font-bold text-gray-800 mb-3">Order Notes (Optional)</h2>
             <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Any special instructions for your order..."
+              value={notes} onChange={(e) => setNotes(e.target.value)}
+              rows={3} placeholder="Any special instructions for your order..."
               className="input resize-none"
             />
           </div>
         </div>
 
-        {/* Order Summary */}
+        {/* ── Order Summary ─────────────────────────────────────────── */}
         <div className="card p-6 h-fit">
           <h2 className="font-black text-gray-900 mb-5">Order Summary</h2>
 
@@ -272,20 +282,28 @@ export default function CheckoutPage() {
               <span className="text-gray-600">Subtotal</span>
               <span>{formatPrice(cart?.subtotal || 0)}</span>
             </div>
+
+            {/* Show applied coupon + discount */}
+            {cart?.coupon_code && (
+              <div className="flex justify-between text-brand-600 text-xs font-medium">
+                <span>Coupon ({cart.coupon_code})</span>
+                <span className="text-green-600">Applied ✓</span>
+              </div>
+            )}
             {(cart?.discount_amount || 0) > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount</span>
                 <span>−{formatPrice(cart?.discount_amount || 0)}</span>
               </div>
             )}
+
             <div className="flex justify-between">
               <span className="text-gray-600">Shipping</span>
               <span>
-                {(cart?.shipping_cost || 0) === 0 ? (
-                  <span className="text-green-600 font-medium">FREE</span>
-                ) : (
-                  formatPrice(cart?.shipping_cost || 0)
-                )}
+                {(cart?.shipping_cost || 0) === 0
+                  ? <span className="text-green-600 font-medium">FREE</span>
+                  : formatPrice(cart?.shipping_cost || 0)
+                }
               </span>
             </div>
             <div className="flex justify-between">
