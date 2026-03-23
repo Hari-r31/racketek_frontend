@@ -5,17 +5,18 @@
  *
  * Responsibilities:
  *  - Load the official GSI script once (idempotent)
- *  - Expose signInWithGoogle() which opens the One-Tap / popup flow
- *    and resolves with the raw id_token string
+ *  - Initialize google.accounts.id ONCE per page load (idempotent)
+ *  - Expose renderGoogleButton() which renders the official button
  *  - NEVER decode or trust the token — that is the backend's job
  *
- * Usage:
- *   import { signInWithGoogle } from "@/lib/auth";
- *   const idToken = await signInWithGoogle();
- *   // send idToken to POST /auth/oauth/google immediately
+ * Key invariant:
+ *  google.accounts.id.initialize() is called AT MOST ONCE per page load.
+ *  Multiple calls would silently overwrite the callback, causing credential
+ *  delivery to the wrong handler. A module-level flag guards this.
  */
 
-// Extend window for the Google GSI SDK
+// ─── Window type extension ────────────────────────────────────────────────────
+
 declare global {
   interface Window {
     google?: {
@@ -45,7 +46,8 @@ interface GoogleIdConfig {
 }
 
 interface CredentialResponse {
-  credential: string; // This is the id_token — must go to backend immediately
+  /** Raw id_token — must be sent to backend immediately, never decoded here */
+  credential: string;
   select_by?: string;
 }
 
@@ -73,39 +75,63 @@ interface RevokeDone {
   error?: string;
 }
 
-// ─── Script Loader ────────────────────────────────────────────────────────────
+// ─── Module-level singletons ──────────────────────────────────────────────────
 
+/**
+ * Promise that resolves when the GSI script is loaded.
+ * Null until the first call to loadGsiScript().
+ * Reused on subsequent calls — script is only injected once.
+ */
 let scriptLoadPromise: Promise<void> | null = null;
 
 /**
+ * Tracks whether google.accounts.id.initialize() has been called.
+ * Prevents multiple initializations which would silently overwrite
+ * the credential callback and break concurrent button instances.
+ *
+ * Reset to null when the client_id changes (edge case: hot reload
+ * with a different env var).
+ */
+let initializedClientId: string | null = null;
+
+// ─── Script loader ────────────────────────────────────────────────────────────
+
+/**
  * Loads https://accounts.google.com/gsi/client exactly once per page.
- * Subsequent calls return the same promise.
+ * Subsequent calls return the cached promise — no duplicate script tags.
  */
 export function loadGsiScript(): Promise<void> {
   if (typeof window === "undefined") {
     return Promise.resolve(); // SSR guard
   }
 
-  // Already loaded
+  // SDK already present (e.g. hot reload after first load)
   if (window.google?.accounts?.id) {
     return Promise.resolve();
   }
 
-  // Already loading
+  // Already loading — return the same promise
   if (scriptLoadPromise) {
     return scriptLoadPromise;
   }
 
   scriptLoadPromise = new Promise<void>((resolve, reject) => {
-    // Guard: script tag might already exist in DOM (e.g. hot reload)
+    // Script tag exists but SDK not yet ready (e.g. script already in HTML)
     if (document.querySelector('script[src*="gsi/client"]')) {
-      // Wait for it to finish
       const interval = setInterval(() => {
         if (window.google?.accounts?.id) {
           clearInterval(interval);
           resolve();
         }
       }, 50);
+      // Safety timeout after 10 s
+      setTimeout(() => {
+        clearInterval(interval);
+        if (!window.google?.accounts?.id) {
+          scriptLoadPromise = null;
+          reject(new Error("Google Sign-In SDK timed out"));
+        }
+      }, 10_000);
       return;
     }
 
@@ -115,7 +141,7 @@ export function loadGsiScript(): Promise<void> {
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => {
-      scriptLoadPromise = null; // allow retry
+      scriptLoadPromise = null; // allow retry on next call
       reject(new Error("Failed to load Google Sign-In SDK"));
     };
     document.head.appendChild(script);
@@ -124,94 +150,58 @@ export function loadGsiScript(): Promise<void> {
   return scriptLoadPromise;
 }
 
-// ─── Sign-In Flow ─────────────────────────────────────────────────────────────
+// ─── Initialize (once) ───────────────────────────────────────────────────────
 
 /**
- * Opens the Google One-Tap / popup sign-in flow.
+ * Call google.accounts.id.initialize() exactly once per client_id per page.
  *
- * Returns the raw id_token string from Google.
- * DO NOT decode it. Send it to POST /auth/oauth/google immediately.
+ * Subsequent calls with the same client_id are no-ops.
+ * If the client_id changes (shouldn't happen in normal use), re-initializes.
  *
- * Throws if:
- *  - NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set
- *  - User dismisses / skips the prompt
- *  - GSI script fails to load
+ * IMPORTANT: The callback passed here is a STABLE reference stored at the
+ * module level. GoogleLoginButton passes a wrapper that reads the latest
+ * per-instance callback via a ref, so we can call initialize() once while
+ * still supporting multiple button instances.
  */
-export function signInWithGoogle(): Promise<string> {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+function ensureInitialized(clientId: string, callback: (r: CredentialResponse) => void): void {
+  if (!window.google?.accounts?.id) return;
 
-  if (!clientId) {
-    return Promise.reject(
-      new Error(
-        "NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set. " +
-          "Add it to .env and restart the dev server."
-      )
-    );
+  if (initializedClientId === clientId) {
+    // Already initialized with this client_id — do NOT call initialize again.
+    return;
   }
 
-  return new Promise<string>(async (resolve, reject) => {
-    try {
-      await loadGsiScript();
-    } catch (err) {
-      reject(err);
-      return;
-    }
-
-    if (!window.google?.accounts?.id) {
-      reject(new Error("Google Sign-In SDK did not initialize correctly"));
-      return;
-    }
-
-    let settled = false;
-
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: (response: CredentialResponse) => {
-        if (settled) return;
-        settled = true;
-
-        if (!response.credential) {
-          reject(new Error("No credential returned from Google"));
-          return;
-        }
-
-        // This is the id_token. Hand it to the caller; never inspect it.
-        resolve(response.credential);
-      },
-      cancel_on_tap_outside: true,
-    });
-
-    window.google.accounts.id.prompt((notification) => {
-      if (settled) return;
-
-      if (notification.isSkippedMoment()) {
-        settled = true;
-        reject(new Error("google_sign_in_skipped"));
-      }
-
-      if (notification.isDismissedMoment()) {
-        const reason = notification.getDismissedReason();
-        // "credential_returned" means callback already fired — not an error
-        if (reason !== "credential_returned") {
-          settled = true;
-          reject(new Error(`google_sign_in_dismissed:${reason}`));
-        }
-      }
-    });
+  window.google.accounts.id.initialize({
+    client_id: clientId,
+    callback,
+    cancel_on_tap_outside: true,
   });
+
+  initializedClientId = clientId;
 }
 
-// ─── Render Button Helper ─────────────────────────────────────────────────────
+// ─── Render button ────────────────────────────────────────────────────────────
 
 /**
  * Renders the official Google Sign-In button into a container element.
- * Returns a cleanup function that cancels any pending prompt.
  *
- * @param container - The DOM element to render into
+ * initialize() is called AT MOST ONCE per page load regardless of how many
+ * times renderGoogleButton() is called (login page + register page both use it).
+ * The credential callback is routed through a stable module-level ref so the
+ * correct per-instance handler always receives the credential.
+ *
+ * @param container - DOM element to render the button into
  * @param onToken   - Called with the raw id_token on success
  * @param onError   - Called with an Error on failure
- * @param options   - Optional button appearance config
+ * @param options   - Optional button appearance overrides
+ * @returns Cleanup function — call on component unmount
  */
+
+// Stable callback ref shared across all renderGoogleButton instances.
+// When a credential arrives we dispatch it to whichever onToken is current.
+let activeTokenHandler: ((idToken: string) => void) | null = null;
+let activeErrorHandler: ((err: Error) => void) | null = null;
+
 export async function renderGoogleButton(
   container: HTMLElement,
   onToken: (idToken: string) => void,
@@ -242,18 +232,27 @@ export async function renderGoogleButton(
     return () => {};
   }
 
-  window.google.accounts.id.initialize({
-    client_id: clientId,
-    callback: (response: CredentialResponse) => {
-      if (!response.credential) {
-        onError(new Error("No credential returned from Google"));
-        return;
-      }
-      onToken(response.credential);
-    },
-    cancel_on_tap_outside: true,
-  });
+  // Register this instance as the active handler.
+  // If two buttons are mounted simultaneously (shouldn't happen, but safe),
+  // the last-registered one handles the credential — consistent with the
+  // single credential flow.
+  activeTokenHandler = onToken;
+  activeErrorHandler = onError;
 
+  // The stable callback passed to initialize() — always dispatches to
+  // whatever activeTokenHandler is current at the time of invocation.
+  const stableCallback = (response: CredentialResponse) => {
+    if (!response.credential) {
+      activeErrorHandler?.(new Error("No credential returned from Google"));
+      return;
+    }
+    activeTokenHandler?.(response.credential);
+  };
+
+  // Initialize once — no-op if already done for this clientId
+  ensureInitialized(clientId, stableCallback);
+
+  // Render the button (safe to call multiple times — SDK handles it)
   window.google.accounts.id.renderButton(container, {
     type: "standard",
     theme: "outline",
@@ -264,8 +263,10 @@ export async function renderGoogleButton(
     ...options,
   });
 
-  // Return cleanup
+  // Return cleanup: deregister this instance's handlers on unmount
   return () => {
+    if (activeTokenHandler === onToken) activeTokenHandler = null;
+    if (activeErrorHandler === onError) activeErrorHandler = null;
     window.google?.accounts.id.cancel();
   };
 }

@@ -6,17 +6,17 @@
  * renderGoogleButton() from lib/auth.ts.
  *
  * On success:
- *  1. Extracts the raw id_token (never decoded here)
+ *  1. Receives the raw id_token from GSI (never decoded here)
  *  2. POSTs to POST /api/v1/auth/oauth/google
- *  3. Stores access_token + refresh_token via authStore
+ *  3. Stores access_token via authStore
  *  4. Calls optional onSuccess(tokenResponse) callback
  *
- * On failure: shows a toast and calls optional onError(err) callback.
- *
- * Props:
- *  onSuccess  - called after full login (store updated)
- *  onError    - called if any step fails
- *  className  - wrapper div class
+ * Render stability
+ * ----------------
+ * The GSI SDK is initialized once per page (enforced in lib/auth.ts).
+ * This component's useEffect runs once on mount ([] dependency array).
+ * onSuccess/onError props are read via refs so the effect never needs
+ * to re-run when parent re-renders with new callback references.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -31,7 +31,6 @@ interface Props {
   onSuccess?: (data: TokenResponse) => void;
   onError?:   (err: Error) => void;
   className?: string;
-  /** Shown while the button is mounting / the GSI script is loading */
   loadingLabel?: string;
 }
 
@@ -44,12 +43,20 @@ export default function GoogleLoginButton({
   const containerRef = useRef<HTMLDivElement>(null);
   const cleanupRef   = useRef<(() => void) | null>(null);
 
-  const { setUser }  = useAuthStore();
+  // Keep latest callbacks in refs so the mount-only useEffect always
+  // invokes the current version without needing to re-run.
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef   = useRef(onError);
+  useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
+  useEffect(() => { onErrorRef.current   = onError;   }, [onError]);
+
+  const setUser  = useAuthStore((s) => s.setUser);
   const { syncUser } = useAuth();
 
   const [mounting, setMounting] = useState(true);
   const [busy,     setBusy]     = useState(false);
 
+  // Mount once — initialize GSI and render the button
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -58,7 +65,8 @@ export default function GoogleLoginButton({
     const init = async () => {
       const cleanup = await renderGoogleButton(
         containerRef.current!,
-        // ── onToken: called by GSI when user consents ──────────────────
+
+        // ── onToken: invoked by GSI with the raw id_token ──────────────
         async (idToken: string) => {
           if (!alive) return;
           setBusy(true);
@@ -69,9 +77,9 @@ export default function GoogleLoginButton({
 
             const data = res.data;
 
-            // Store access_token + user (refresh_token is httpOnly cookie set by backend)
+            // Store access_token (refresh_token is set as httpOnly cookie by backend)
             setUser(data.user, data.access_token);
-            // Sync context so AuthProvider reflects new user immediately
+            // Sync AuthContext immediately so consumers reflect the new user
             syncUser(data.user);
 
             if (data.is_new_user) {
@@ -80,23 +88,23 @@ export default function GoogleLoginButton({
               toast.success(`Welcome back, ${data.user.full_name.split(" ")[0]}! 👋`);
             }
 
-            onSuccess?.(data);
+            onSuccessRef.current?.(data);
           } catch (err: any) {
             const message =
               err?.response?.data?.detail ||
               "Google login failed. Please try again.";
             toast.error(message);
-            const e = new Error(message);
-            onError?.(e);
+            onErrorRef.current?.(new Error(message));
           } finally {
             if (alive) setBusy(false);
           }
         },
-        // ── onError: called by renderGoogleButton on hard failures ──────
+
+        // ── onError: invoked by renderGoogleButton on hard failures ─────
         (err: Error) => {
           if (!alive) return;
 
-          // User dismissal / skip is not a real error — show nothing
+          // Dismissal/skip is not an error — don't show a toast
           if (
             err.message.startsWith("google_sign_in_skipped") ||
             err.message.startsWith("google_sign_in_dismissed")
@@ -105,7 +113,7 @@ export default function GoogleLoginButton({
           }
 
           toast.error(err.message || "Google Sign-In failed");
-          onError?.(err);
+          onErrorRef.current?.(err);
         }
       );
 
@@ -118,23 +126,23 @@ export default function GoogleLoginButton({
     return () => {
       alive = false;
       cleanupRef.current?.();
+      cleanupRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Empty array: mount once, never re-run
 
   return (
     <div className={`relative ${className}`}>
-      {/* The GSI SDK renders its button into this div */}
+      {/* GSI SDK renders its button into this div */}
       <div ref={containerRef} className="w-full" />
 
-      {/* Mounting skeleton — matches GSI button height */}
+      {/* Skeleton shown while the GSI script loads */}
       {mounting && (
         <div className="absolute inset-0 flex items-center justify-center rounded-md bg-white border border-gray-300 text-sm text-gray-500 animate-pulse h-10">
           {loadingLabel}
         </div>
       )}
 
-      {/* Busy overlay while we're calling the backend */}
+      {/* Overlay while backend call is in flight */}
       {busy && !mounting && (
         <div className="absolute inset-0 flex items-center justify-center rounded-md bg-white/80 backdrop-blur-sm">
           <div className="w-5 h-5 border-2 border-gray-400 border-t-blue-500 rounded-full animate-spin" />

@@ -12,12 +12,22 @@
  * Components should consume this via useAuth() — do NOT read authStore
  * directly for auth-gating decisions; always prefer this context which
  * reflects the server-verified state.
+ *
+ * Render stability notes
+ * ----------------------
+ * useAuthStore() is called with INDIVIDUAL selectors (not the whole store
+ * object). Selecting the whole store object causes a new reference on every
+ * state update, which makes useCallback re-create logout on every render,
+ * which triggers re-renders in all consumers — an infinite cascade.
+ * Individual selectors return stable references that only change when that
+ * specific slice of state changes.
  */
 
 import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
 } from "react";
@@ -49,28 +59,36 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const store = useAuthStore();
+  // Select INDIVIDUAL stable actions — NOT the whole store object.
+  // Selecting the whole store returns a new object reference on every render,
+  // which makes useCallback dependencies unstable and causes infinite loops.
+  const storeLogout     = useAuthStore((s) => s.logout);
+  const storeUpdateUser = useAuthStore((s) => s.updateUser);
+  const persistedUser   = useAuthStore((s) => s.user);
 
-  const [user, setUser]         = useState<User | null>(store.user);
+  const [user, setUser]         = useState<User | null>(persistedUser);
   const [isLoading, setLoading] = useState<boolean>(true);
   const [isReady, setReady]     = useState<boolean>(false);
 
-  // On mount: verify session against the backend.
-  // The api interceptor handles 401 → refresh → retry automatically.
-  // If it still fails after refresh, the interceptor clears cookies and
-  // redirects; we just log out the local state here too.
+  // Keep a ref to storeLogout so the hydrate closure below never stales.
+  const storeLogoutRef = useRef(storeLogout);
+  useEffect(() => { storeLogoutRef.current = storeLogout; }, [storeLogout]);
+
+  const storeUpdateUserRef = useRef(storeUpdateUser);
+  useEffect(() => { storeUpdateUserRef.current = storeUpdateUser; }, [storeUpdateUser]);
+
+  // ── Hydration: verify session against backend on mount ──────────────────
   useEffect(() => {
     let cancelled = false;
 
     const hydrate = async () => {
-      // No token at all → skip the network call
-      const { Cookies } = await import("js-cookie").then((m) => ({
-        Cookies: m.default,
-      }));
+      // Lazy-import js-cookie to avoid SSR issues
+      const Cookies = (await import("js-cookie")).default;
       const token = Cookies.get("access_token");
 
       if (!token) {
-        store.logout(); // clear any stale Zustand persist state
+        // No token — clear any stale persisted state and mark ready
+        storeLogoutRef.current();
         if (!cancelled) {
           setUser(null);
           setLoading(false);
@@ -82,12 +100,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await api.get<User>("/users/profile");
         if (!cancelled) {
-          store.updateUser(res.data); // keep Zustand in sync
+          storeUpdateUserRef.current(res.data);
           setUser(res.data);
         }
       } catch {
         // Token invalid even after refresh attempt — clean slate
-        store.logout();
+        storeLogoutRef.current();
         if (!cancelled) setUser(null);
       } finally {
         if (!cancelled) {
@@ -98,25 +116,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     hydrate();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => { cancelled = true; };
+  }, []); // Empty array: run once on mount only
 
+  // ── syncUser: called by login/OAuth flows to update context immediately ──
   const syncUser = useCallback((u: User) => {
     setUser(u);
-  }, []);
+  }, []); // No dependencies — setUser is always stable
 
+  // ── logout: clears backend cookie + local state ──────────────────────────
   const logout = useCallback(async () => {
     // Tell the backend to clear the httpOnly refresh_token cookie.
-    // Fire-and-forget: if it fails the cookie will just expire naturally.
+    // Fire-and-forget: if it fails the cookie expires naturally.
     try {
       await api.post("/auth/logout");
     } catch {}
-    store.logout();
+    storeLogoutRef.current();
     setUser(null);
-  }, [store]);
+  }, []); // Stable — uses ref, not storeLogout directly
 
   const value: AuthContextValue = {
     user,
