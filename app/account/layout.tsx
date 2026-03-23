@@ -39,13 +39,13 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
   return (
     <ThemeProvider>
-      <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-[rgb(var(--surface-1))]">
         <TopBar />
         <Navbar />
 
         <main className="flex-1">
           {/* Account header */}
-          <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="bg-white dark:bg-[rgb(var(--surface-0))] border-b border-gray-200 dark:border-[rgb(var(--border-2))] shadow-sm">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
               {/* User info row */}
@@ -57,7 +57,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                       : getInitials(user.full_name)}
                   </div>
                   <div>
-                    <h1 className="text-lg font-black text-gray-900 leading-tight">{user.full_name}</h1>
+                    <h1 className="text-lg font-black text-gray-900 dark:text-[rgb(var(--text-900))] leading-tight">{user.full_name}</h1>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <p className="text-sm text-gray-500">{user.email}</p>
                       {user.is_email_verified ? (
@@ -95,7 +95,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                       className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
                         active
                           ? "border-brand-600 text-brand-600"
-                          : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
+                          : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500"
                       }`}
                     >
                       <Icon size={14} />

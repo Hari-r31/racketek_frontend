@@ -53,7 +53,7 @@ export default function OrdersPage() {
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                 status === f.value
                   ? "bg-brand-600 text-white border-brand-600 shadow-sm"
-                  : "bg-white text-gray-700 border-gray-200 hover:border-brand-400 hover:text-brand-600"
+                  : "bg-white dark:bg-[rgb(var(--surface-2))] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-[rgb(var(--border-2))] hover:border-brand-400 hover:text-brand-600 dark:hover:border-green-600 dark:hover:text-green-400"
               }`}
             >
               {f.label}
@@ -103,7 +103,7 @@ export default function OrdersPage() {
               <Link
                 key={order.id}
                 href={`/account/orders/${order.order_number}`}
-                className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_auto_auto] gap-4 items-center px-4 sm:px-5 py-4 hover:bg-gray-50 transition-colors"
+                className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_auto_auto] gap-4 items-center px-4 sm:px-5 py-4 hover:bg-gray-50 dark:hover:bg-[rgb(var(--surface-2))] transition-colors"
               >
                 {/* Order number + items */}
                 <div className="min-w-0">
@@ -160,7 +160,7 @@ export default function OrdersPage() {
                     p === "…"
                       ? <span key={`e${i}`} className="text-gray-400 text-xs px-1">…</span>
                       : <button key={p} onClick={() => setPage(p as number)}
-                          className={`w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${page === p ? "bg-brand-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
+                          className={`w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${page === p ? "bg-brand-600 text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[rgb(var(--surface-3))]"}` }>
                           {p}
                         </button>
                   )}

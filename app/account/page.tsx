@@ -334,8 +334,8 @@ export default function AccountProfilePage() {
                     className={`${inp} pl-9 bg-gray-50 text-gray-400 cursor-not-allowed pr-24`} />
                   <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     user.is_email_verified
-                      ? "bg-green-100 text-green-700"
-                      : "bg-orange-100 text-orange-600"
+                      ? "bg-green-100 text-green-700 dark:bg-[rgb(12_45_22)] dark:text-[#86efac]"
+                      : "bg-orange-100 text-orange-600 dark:bg-[rgb(55_22_5)] dark:text-[#fb923c]"
                   }`}>
                     {user.is_email_verified ? "✓ Verified" : "Unverified"}
                   </span>

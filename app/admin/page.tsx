@@ -176,7 +176,7 @@ export default function AdminDashboard() {
                   <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" className="recharts-cartesian-grid" stroke="var(--chart-grid, #f0f0f0)" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
               <Tooltip formatter={(v: number) => formatPrice(v)} />
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             {(data?.top_products || []).map((p, i) => (
               <div key={p.id} className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                <span className="w-6 h-6 bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">

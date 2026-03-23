@@ -14,13 +14,13 @@ const config: Config = {
           50:  "#f0fdf4",
           100: "#dcfce7",
           200: "#bbf7d0",
-          300: "#86efac",
-          400: "#4ade80",
+          300: "#86efac",   /* used as dark-mode highlight text      */
+          400: "#4ade80",   /* used as dark-mode brand text ~7.7:1    */
           500: "#22c55e",
           600: "#16a34a",
           700: "#15803d",
-          800: "#166534",
-          900: "#14532d",
+          800: "#166534",   /* used as dark-mode border (brand-800)   */
+          900: "#14532d",   /* used as dark-mode highlight bg         */
           950: "#052e16",
         },
       },

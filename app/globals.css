@@ -54,6 +54,7 @@ html.dark {
 
   --background: 222 47% 7%;
   --foreground: 210 40% 95%;
+  --chart-grid: rgb(38 38 57);   /* dark recharts CartesianGrid stroke */
 }
 
 @layer base {
@@ -100,6 +101,28 @@ html.dark .hover\:text-white:hover    { color: #ffffff !important; }
 
 /* Group-hover text */
 html.dark .group:hover .group-hover\:text-brand-600 { color: #4ade80 !important; }
+html.dark .group:hover .group-hover\:text-brand-700 { color: #4ade80 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BRAND COLOR ACCESSIBILITY (CRITICAL FIX)
+   brand-500 (#22c55e) = ~3.5:1 contrast on dark surfaces → FAILS WCAG AA
+   brand-600 (#16a34a) = ~3.0:1 contrast on dark surfaces → FAILS WCAG AA
+   brand-700 (#15803d) = ~2.8:1 contrast on dark surfaces → FAILS WCAG AA
+   Solution: map all three to brand-400 (#4ade80) which hits ~7.7:1 — PASSES AA.
+   Fixes: navbar hover states, active tab labels, badge text, icon labels, links.
+   ✅ Light mode: 100% untouched — every rule is scoped to html.dark.
+──────────────────────────────────────────────────────────────────────────── */
+html.dark .text-brand-500            { color: #4ade80 !important; }
+html.dark .text-brand-600            { color: #4ade80 !important; }
+html.dark .text-brand-700            { color: #4ade80 !important; }
+
+html.dark .hover\:text-brand-400:hover { color: #86efac !important; }
+html.dark .hover\:text-brand-500:hover { color: #4ade80 !important; }
+html.dark .hover\:text-brand-600:hover { color: #4ade80 !important; }
+html.dark .hover\:text-brand-700:hover { color: #4ade80 !important; }
+
+html.dark .focus\:text-brand-600:focus { color: #4ade80 !important; }
+html.dark .focus\:text-brand-700:focus { color: #4ade80 !important; }
 
 /* ── Border overrides ─────────────────────────────────────────────────── */
 html.dark .border-gray-100         { border-color: rgb(var(--border-1)) !important; }
@@ -116,6 +139,79 @@ html.dark .divide-y.divide-gray-50  > :not([hidden]) ~ :not([hidden]) { border-c
 
 /* ── Ring overrides ───────────────────────────────────────────────────── */
 html.dark .focus\:ring-brand-500:focus { --tw-ring-color: #22c55e; }
+
+/* ── Search input focus-bg flash fix ─────────────────────────────────────
+   Navbar SearchBox has "focus:bg-white". Tailwind generates .focus\:bg-white:focus
+   which the global html.dark .bg-white rule does NOT catch (pseudo vs class).
+   Override it here so focus no longer flashes blinding white in dark mode. */
+html.dark .focus\:bg-white:focus { background-color: rgb(var(--surface-1)) !important; }
+
+/* ── Green semantic colors (email-verified badge, success banners) ──── */
+html.dark .bg-green-100              { background-color: rgb(12 45 22)      !important; }
+html.dark .text-green-700            { color: #86efac                       !important; }
+html.dark .text-green-800            { color: #86efac                       !important; }
+html.dark .border-green-100          { border-color: rgb(22 163 74 / 0.25)  !important; }
+html.dark .border-green-200          { border-color: rgb(22 163 74 / 0.35)  !important; }
+html.dark .text-green-600            { color: #4ade80                       !important; }
+/* Note: bg-green-50 is already overridden earlier in this file */
+
+/* ── Orange semantic colors (unverified badge, warning notices) ──────── */
+html.dark .bg-orange-50              { background-color: rgb(45 18 5)       !important; }
+html.dark .bg-orange-100             { background-color: rgb(55 22 5)       !important; }
+html.dark .text-orange-500           { color: #fb923c                       !important; }
+html.dark .text-orange-600           { color: #fb923c                       !important; }
+html.dark .text-orange-700           { color: #fdba74                       !important; }
+html.dark .text-orange-800           { color: #fdba74                       !important; }
+html.dark .border-orange-100         { border-color: rgb(234 88 12 / 0.25)  !important; }
+html.dark .border-orange-200         { border-color: rgb(234 88 12 / 0.35)  !important; }
+html.dark .bg-orange-600             { background-color: rgb(194 65 12)     !important; }
+html.dark .hover\:bg-orange-700:hover { background-color: rgb(154 52 18)   !important; }
+
+/* ── Red semantic colors (danger zone, error states, delete actions) ─── */
+html.dark .bg-red-50             { background-color: rgb(45 8 8)        !important; }
+html.dark .bg-red-100            { background-color: rgb(60 10 10)       !important; }
+html.dark .text-red-600          { color: #f87171                        !important; }
+html.dark .text-red-700          { color: #f87171                        !important; }
+html.dark .text-red-800          { color: #fca5a5                        !important; }
+html.dark .text-red-900          { color: #fca5a5                        !important; }
+html.dark .border-red-100        { border-color: rgb(220 38 38 / 0.2)    !important; }
+html.dark .border-red-300        { border-color: rgb(220 38 38 / 0.5)    !important; }
+html.dark .hover\:bg-red-50:hover { background-color: rgb(55 12 12)     !important; }
+html.dark .hover\:bg-red-700:hover { background-color: rgb(185 28 28)   !important; }
+/* Note: text-red-500 / border-red-100 / border-red-200 / hover:bg-red-50 already partially covered earlier */
+
+/* ── Blue semantic colors (info boxes, Razorpay card) ───────────────── */
+html.dark .text-blue-600         { color: #60a5fa                        !important; }
+html.dark .text-blue-700         { color: #93c5fd                        !important; }
+html.dark .border-blue-200       { border-color: rgb(37 99 235 / 0.35)   !important; }
+
+/* ── Yellow / Amber (Pending badge, warning states) ───────────────────── */
+html.dark .bg-yellow-100         { background-color: rgb(45 32 0)        !important; }
+html.dark .text-yellow-800       { color: #fde68a                        !important; }
+
+/* ── Indigo (Processing badge) ───────────────────────────────────────────── */
+html.dark .bg-indigo-50          { background-color: rgb(15 10 45)       !important; }
+html.dark .bg-indigo-100         { background-color: rgb(20 15 55)       !important; }
+html.dark .text-indigo-600       { color: #818cf8                        !important; }
+html.dark .text-indigo-800       { color: #a5b4fc                        !important; }
+html.dark .border-indigo-200     { border-color: rgb(99 102 241 / 0.35)  !important; }
+html.dark .hover\:bg-indigo-100:hover { background-color: rgb(25 20 65) !important; }
+
+/* ── Cyan (Shipped badge) ────────────────────────────────────────────────── */
+html.dark .bg-cyan-100           { background-color: rgb(5 25 35)        !important; }
+html.dark .text-cyan-800         { color: #67e8f9                        !important; }
+
+/* ── Purple (Out for Delivery badge) ────────────────────────────────────── */
+html.dark .bg-purple-100         { background-color: rgb(25 10 40)       !important; }
+html.dark .text-purple-800       { color: #d8b4fe                        !important; }
+
+/* ── Pink (Refunded badge) ─────────────────────────────────────────────────── */
+html.dark .bg-pink-50            { background-color: rgb(40 8 25)        !important; }
+html.dark .bg-pink-100           { background-color: rgb(50 10 30)       !important; }
+html.dark .text-pink-600         { color: #f472b6                        !important; }
+html.dark .text-pink-800         { color: #f9a8d4                        !important; }
+html.dark .border-pink-200       { border-color: rgb(236 72 153 / 0.35)  !important; }
+html.dark .hover\:bg-pink-100:hover { background-color: rgb(60 12 38)   !important; }
 
 /* ── Placeholder ──────────────────────────────────────────────────────── */
 html.dark input::placeholder,
@@ -284,6 +380,168 @@ html.dark .backdrop-blur-\[2px\] { backdrop-filter: blur(2px); }
 /* ── Sticky headers in admin orders ──────────────────────────────────── */
 html.dark .shrink-0.bg-white.border-b { background-color: rgb(var(--surface-0)) !important; }
 html.dark .bg-gray-50.border-b { background-color: rgb(var(--surface-1)) !important; }
+
+/* ── Navbar dark mode ─────────────────────────────────────────────────── */
+html.dark header.sticky { background-color: rgb(var(--surface-0)) !important; border-color: rgb(var(--border-1)) !important; }
+/* Navbar search input */
+html.dark header input[type="text"] {
+  background-color: rgb(var(--surface-2)) !important;
+  border-color: rgb(var(--border-2)) !important;
+  color: rgb(var(--text-900)) !important;
+}
+/* Navbar search suggestions dropdown */
+html.dark .bg-white.rounded-2xl.shadow-2xl.border.border-gray-100 {
+  background-color: rgb(var(--surface-0)) !important;
+  border-color: rgb(var(--border-2)) !important;
+}
+/* Category nav buttons in navbar */
+html.dark header nav button { color: rgb(var(--text-700)); }
+html.dark header nav button:hover { background-color: rgb(var(--surface-2)) !important; color: rgb(var(--text-900)) !important; }
+/* Active category button in mega menu */
+html.dark header nav button.bg-brand-50 { background-color: rgb(15 35 20 / 0.6) !important; color: #4ade80 !important; }
+/* Mega menu panel */
+html.dark header .absolute.inset-x-0.top-full.bg-white {
+  background-color: rgb(var(--surface-0)) !important;
+  border-color: #22c55e !important;
+}
+/* User dropdown */
+html.dark .absolute.right-0.top-full.mt-2.bg-white.rounded-2xl {
+  background-color: rgb(var(--surface-0)) !important;
+  border-color: rgb(var(--border-2)) !important;
+}
+html.dark .bg-gradient-to-br.from-brand-50.to-white.border-b {
+  background: linear-gradient(135deg, rgb(12 35 20), rgb(var(--surface-1))) !important;
+}
+/* Overflow dropdown */
+html.dark .absolute.top-full.left-0.mt-1\.5.bg-white.rounded-2xl {
+  background-color: rgb(var(--surface-0)) !important;
+  border-color: rgb(var(--border-2)) !important;
+}
+/* OthersDropdown nested panel */
+html.dark .bg-gray-50\/80 { background-color: rgb(var(--surface-1)) !important; }
+html.dark .w-52.border-l.border-gray-100 { border-color: rgb(var(--border-1)) !important; }
+/* Mobile drawer */
+html.dark .fixed.inset-y-0.left-0.bg-white.flex.flex-col {
+  background-color: rgb(var(--surface-0)) !important;
+}
+html.dark .fixed.inset-y-0.left-0 .border-b.border-gray-100 { border-color: rgb(var(--border-1)) !important; }
+html.dark .fixed.inset-y-0.left-0 .rounded-2xl.border.border-gray-100 {
+  border-color: rgb(var(--border-1)) !important;
+  background-color: rgb(var(--surface-1)) !important;
+}
+/* Mobile drawer account header gradient */
+html.dark .px-4.py-3.bg-gradient-to-br.from-brand-50.to-white {
+  background: linear-gradient(135deg, rgb(12 35 20), rgb(var(--surface-1))) !important;
+}
+/* Suggestion type pills in navbar */
+html.dark .text-gray-400.bg-gray-100.px-1\.5.py-0\.5.rounded-full {
+  background-color: rgb(var(--surface-3)) !important;
+  color: rgb(var(--text-600)) !important;
+}
+
+/* ── Account layout dark mode ─────────────────────────────────────────── */
+html.dark .flex.flex-col.min-h-screen.bg-gray-50 { background-color: rgb(var(--surface-1)) !important; }
+html.dark .bg-white.border-b.border-gray-200.shadow-sm { background-color: rgb(var(--surface-0)) !important; border-color: rgb(var(--border-2)) !important; }
+/* Account header user info */
+html.dark .bg-white.border-b.border-gray-200 h1 { color: rgb(var(--text-900)) !important; }
+/* Account tab nav */
+html.dark .border-transparent.text-gray-500:not(.border-brand-600) { color: rgb(var(--text-600)) !important; }
+html.dark .border-transparent.text-gray-500:hover { color: rgb(var(--text-800)) !important; border-color: rgb(var(--border-3)) !important; }
+/* Verified / unverified badges in account header */
+html.dark .text-green-600.bg-green-50.border-green-100 { background-color: rgb(8 35 18) !important; border-color: rgb(22 163 74 / 0.3) !important; }
+html.dark .text-orange-500.bg-orange-50.border-orange-100 { background-color: rgb(45 18 5) !important; border-color: rgb(234 88 12 / 0.3) !important; }
+html.dark .text-brand-600.bg-brand-50.border-brand-100 { background-color: rgb(15 40 25) !important; }
+/* Logout button in account header */
+html.dark .text-red-500.border-red-100:hover { background-color: rgb(45 8 8) !important; border-color: rgb(220 38 38 / 0.4) !important; }
+
+/* ── Account page cards (profile, orders, addresses, etc.) ────────────── */
+/* Lbl text in forms */
+html.dark .text-xs.font-semibold.text-gray-500.uppercase { color: rgb(var(--text-600)) !important; }
+/* Avatar uploader — info text */
+html.dark .text-sm.font-bold.text-gray-800 { color: rgb(var(--text-800)) !important; }
+/* Account summary right column links */
+html.dark .text-gray-600:not(label):not(button) { color: rgb(var(--text-600)) !important; }
+html.dark .divide-y.divide-gray-50 > :not([hidden]) ~ :not([hidden]) { border-color: rgb(var(--border-1)) !important; }
+
+/* ── Orders page dark mode ────────────────────────────────────────────── */
+/* Status filter pills — inactive */
+html.dark button.bg-white.text-gray-700.border-gray-200:not(.bg-brand-600) {
+  background-color: rgb(var(--surface-2)) !important;
+  color: rgb(var(--text-700)) !important;
+  border-color: rgb(var(--border-2)) !important;
+}
+html.dark button.bg-white.text-gray-700.border-gray-200:hover {
+  border-color: #22c55e !important;
+  color: #4ade80 !important;
+}
+/* Order row hover */
+html.dark a.grid.hover\:bg-gray-50:hover { background-color: rgb(var(--surface-2)) !important; }
+/* Pagination number buttons */
+html.dark button.text-gray-600.hover\:bg-gray-100:hover { background-color: rgb(var(--surface-2)) !important; }
+html.dark .text-gray-600.font-medium.hover\:text-brand-600 { color: rgb(var(--text-600)) !important; }
+
+/* ── Customer Support page dark mode ──────────────────────────────────── */
+/* Ticket card border + expand area */
+html.dark .border.border-gray-200.rounded-xl { border-color: rgb(var(--border-2)) !important; }
+html.dark .border-t.border-gray-100.px-5.py-4 { border-color: rgb(var(--border-1)) !important; background-color: rgb(var(--surface-1)) !important; }
+/* Reply bubbles in support */
+html.dark .bg-white.border.border-gray-200.rounded-xl.p-3 {
+  background-color: rgb(var(--surface-2)) !important;
+  border-color: rgb(var(--border-2)) !important;
+  color: rgb(var(--text-700)) !important;
+}
+/* Admin reply bubble */
+html.dark .bg-brand-50.border-brand-200 {
+  background-color: rgb(15 40 25 / 0.6) !important;
+  border-color: rgb(22 163 74 / 0.35) !important;
+}
+html.dark .bg-brand-50.border-brand-200 p.text-gray-700 { color: rgb(var(--text-700)) !important; }
+/* You / Support label pills in reply */
+html.dark .bg-gray-200.text-gray-700 { background-color: rgb(var(--surface-3)) !important; color: rgb(var(--text-700)) !important; }
+/* Ticket expand button hover */
+html.dark button.w-full.text-left.hover\:bg-gray-50:hover { background-color: rgb(var(--surface-2)) !important; }
+/* Quick subject chips */
+html.dark button.text-xs.px-3.py-1\.5.bg-gray-100.rounded-full {
+  background-color: rgb(var(--surface-3)) !important;
+  color: rgb(var(--text-700)) !important;
+}
+html.dark button.text-xs.px-3.py-1\.5.bg-gray-100.rounded-full:hover {
+  background-color: rgb(15 40 25) !important;
+  color: #4ade80 !important;
+}
+/* Image upload dashed button */
+html.dark .border-dashed.border-gray-300 {
+  border-color: rgb(var(--border-3)) !important;
+  color: rgb(var(--text-500)) !important;
+}
+/* Blue tip box in support form */
+html.dark .bg-blue-50.border-blue-200.rounded-xl.p-3 {
+  background-color: rgb(8 18 45) !important;
+  border-color: rgb(37 99 235 / 0.35) !important;
+  color: #93c5fd !important;
+}
+/* Contact info cards */
+html.dark .bg-gray-50.rounded-lg { background-color: rgb(var(--surface-2)) !important; }
+html.dark .bg-gray-50.rounded-lg .text-gray-700 { color: rgb(var(--text-700)) !important; }
+html.dark .bg-gray-50.rounded-lg .text-gray-500 { color: rgb(var(--text-500)) !important; }
+/* Close ticket button */
+html.dark button.border.border-gray-200.text-gray-600 {
+  border-color: rgb(var(--border-2)) !important;
+  color: rgb(var(--text-600)) !important;
+}
+html.dark button.border.border-gray-200.text-gray-600:hover {
+  background-color: rgb(var(--surface-3)) !important;
+}
+
+/* ── Pagination dark mode (shared) ────────────────────────────────────── */
+html.dark .flex.items-center.justify-between.px-5.py-4.border-t { border-color: rgb(var(--border-1)) !important; }
+
+/* ── Status & badge colors (customer-facing) ─────────────────────────── */
+html.dark .bg-yellow-100.text-yellow-800 { background-color: rgb(45 28 0 / 0.8) !important; color: #fde68a !important; }
+html.dark .bg-blue-100.text-blue-800    { background-color: rgb(8 18 45 / 0.8) !important; color: #93c5fd !important; }
+html.dark .bg-orange-100.text-orange-800 { background-color: rgb(45 18 5 / 0.8) !important; color: #fdba74 !important; }
+html.dark .bg-gray-100.text-gray-700    { background-color: rgb(var(--surface-3)) !important; color: rgb(var(--text-600)) !important; }
+html.dark .bg-gray-100.text-gray-600    { background-color: rgb(var(--surface-3)) !important; color: rgb(var(--text-600)) !important; }
 
 /* ── Scrollbar dark ───────────────────────────────────────────────────── */
 html.dark ::-webkit-scrollbar-track { background: rgb(var(--surface-1)); }

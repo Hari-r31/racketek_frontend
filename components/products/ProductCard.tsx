@@ -185,7 +185,7 @@ function ProductCard({ product, priority = false }: Props) {
                 onClick={handleWishlist}
                 whileTap={{ scale: 0.85 }}
                 disabled={wlBusy}
-                className="w-8 h-8 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-md hover:bg-red-50 transition-colors"
+                className="w-8 h-8 bg-gray-100 dark:bg-[rgb(var(--surface-3))] rounded-full flex items-center justify-center shadow-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.span

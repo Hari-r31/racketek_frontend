@@ -199,7 +199,7 @@ function ProductsPageInner() {
             onClick={() => setFiltersOpen(o => !o)}
             className={`flex items-center gap-2 border rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               filtersOpen || hasFilters
-                ? "border-brand-500 text-brand-600 bg-brand-50"
+                ? "border-brand-500 dark:border-brand-400 text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-[rgb(15_40_25)]"
                 : "border-gray-300 text-gray-700 hover:bg-gray-50"
             }`}
           >

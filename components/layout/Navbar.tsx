@@ -111,7 +111,7 @@ function SearchBox({
                       <span className="flex-1 truncate">
                         {s.label.split(new RegExp(`(${value.trim()})`, "gi")).map((part, pi) =>
                           part.toLowerCase() === value.trim().toLowerCase()
-                            ? <mark key={pi} className="bg-brand-100 text-brand-700 font-bold rounded px-0.5">{part}</mark>
+                            ? <mark key={pi} className="bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 font-bold rounded px-0.5">{part}</mark>
                             : <span key={pi}>{part}</span>
                         )}
                       </span>

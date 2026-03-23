@@ -159,7 +159,7 @@ export default function AddressesPage() {
 
         {/* Add / Edit Form */}
         {(showForm || editingAddress) && (
-          <div className="border border-brand-200 rounded-xl p-5 mb-6 bg-brand-50/30">
+          <div className="border border-brand-200 dark:border-brand-800 rounded-xl p-5 mb-6 bg-brand-50/30 dark:bg-[rgb(12_30_18)]">
             <h3 className="font-bold text-gray-800 mb-4">
               {editingAddress ? "Edit Address" : "New Address"}
             </h3>
@@ -186,7 +186,7 @@ export default function AddressesPage() {
             {addresses.map((addr) => (
               <div
                 key={addr.id}
-                className={`border rounded-xl p-4 ${addr.is_default ? "border-brand-300 " : "border-gray-200"}`}
+                className={`border rounded-xl p-4 ${addr.is_default ? "border-brand-300 dark:border-brand-700" : "border-gray-200"}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -194,7 +194,7 @@ export default function AddressesPage() {
                       <p className="font-semibold text-gray-800">{addr.full_name}</p>
                       <span className="badge bg-gray-100 text-gray-600 capitalize">{addr.address_type}</span>
                       {addr.is_default && (
-                        <span className="badge bg-brand-100 text-brand-700 flex items-center gap-1">
+                        <span className="badge bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 flex items-center gap-1">
                           <Star size={10} fill="currentColor" /> Default
                         </span>
                       )}
@@ -205,14 +205,14 @@ export default function AddressesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => { setEditingAddress(addr); setShowForm(false); }}
-                      className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={() => { setEditingAddress(addr); setShowForm(false); }}
+                    className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-[rgb(var(--surface-3))] transition-colors"
                     >
-                      <Edit3 size={13} className="text-gray-500" />
+                    <Edit3 size={13} className="text-gray-500" />
                     </button>
                     <button
-                      onClick={() => deleteAddress.mutate(addr.id)}
-                      className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-colors"
+                    onClick={() => deleteAddress.mutate(addr.id)}
+                    className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-red-50 dark:hover:bg-[rgb(55_12_12)] hover:border-red-300 transition-colors"
                     >
                       <Trash2 size={13} className="text-gray-400 hover:text-red-500" />
                     </button>

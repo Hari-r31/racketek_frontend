@@ -195,8 +195,8 @@ export default function CheckoutPage() {
                     key={addr.id}
                     className={`flex gap-3 p-4 border rounded-xl cursor-pointer transition-colors ${
                       selectedAddress === addr.id
-                        ? "border-brand-600 bg-brand-50"
-                        : "border-gray-200 hover:border-brand-300"
+                        ? "border-brand-600 dark:border-brand-400 bg-brand-50 dark:bg-[rgb(15_40_25)]"
+                        : "border-gray-200 hover:border-brand-300 dark:hover:border-brand-500"
                     }`}
                   >
                     <input
@@ -233,7 +233,7 @@ export default function CheckoutPage() {
               <CreditCard size={18} className="text-brand-600" />
               Payment Method
             </h2>
-            <div className="flex items-center gap-3 p-4 border border-brand-200 rounded-xl bg-brand-50">
+            <div className="flex items-center gap-3 p-4 border border-brand-200 dark:border-brand-800 rounded-xl bg-brand-50 dark:bg-[rgb(12_30_18)]">
               <div className="w-10 h-7 bg-blue-100 rounded flex items-center justify-center shrink-0">
                 <CreditCard size={14} className="text-blue-600" />
               </div>

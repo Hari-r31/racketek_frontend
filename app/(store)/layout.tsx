@@ -39,7 +39,7 @@ function BlockedWall() {
             </Link>
             <button
               onClick={logout}
-              className="inline-flex items-center justify-center gap-2 border-2 border-gray-300 text-gray-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center justify-center gap-2 border-2 border-gray-300 text-gray-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[rgb(var(--surface-2))] transition-colors"
             >
               Sign Out
             </button>

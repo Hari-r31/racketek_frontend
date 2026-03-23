@@ -18,11 +18,11 @@ import toast from "react-hot-toast";
 // Constants
 // ─────────────────────────────────────────────
 const STATUS_STYLES: Record<string, string> = {
-  open:                 "bg-yellow-100 text-yellow-800",
-  in_progress:          "bg-blue-100 text-blue-800",
-  waiting_for_customer: "bg-orange-100 text-orange-800",
-  resolved:             "bg-green-100 text-green-800",
-  closed:               "bg-gray-100 text-gray-700",
+  open:                 "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+  in_progress:          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  waiting_for_customer: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+  resolved:             "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  closed:               "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -34,9 +34,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const PRIORITY_STYLES: Record<string, string> = {
-  low:    "bg-gray-100 text-gray-600",
-  medium: "bg-blue-100 text-blue-700",
-  high:   "bg-red-100 text-red-700",
+  low:    "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  medium: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  high:   "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
 const COMMON_SUBJECTS = [
@@ -210,11 +210,11 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
   };
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 dark:border-[rgb(var(--border-2))] rounded-xl overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full text-left px-5 py-4 flex items-start justify-between hover:bg-gray-50 transition-colors"
+        className="w-full text-left px-5 py-4 flex items-start justify-between hover:bg-gray-50 dark:hover:bg-[rgb(var(--surface-2))] transition-colors"
       >
         <div className="flex-1 min-w-0 mr-4">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -223,7 +223,7 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
                 {ticket.ticket_number}
               </span>
             )}
-            <p className="font-semibold text-gray-800 text-sm truncate">{ticket.subject}</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{ticket.subject}</p>
             <span className={`badge ${STATUS_STYLES[ticket.status] || "bg-gray-100 text-gray-700"}`}>
               {STATUS_LABELS[ticket.status] || ticket.status}
             </span>
@@ -231,7 +231,7 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
               {ticket.priority}
             </span>
           </div>
-          <p className="text-xs text-gray-400 flex items-center gap-1.5">
+          <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
             <Clock size={11} />
             {formatDate(ticket.created_at)}
             {ticket.replies?.length > 0 && (
@@ -249,12 +249,12 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
 
       {/* Expanded */}
       {open && (
-        <div className="border-t border-gray-100 px-5 py-4 space-y-4 ">
+        <div className="border-t border-gray-100 dark:border-[rgb(var(--border-1))] px-5 py-4 space-y-4 bg-white dark:bg-[rgb(var(--surface-1))]">
 
           {/* Original message */}
           <div>
-            <p className="text-xs font-bold text-gray-500 mb-2">Your Message</p>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 text-sm text-gray-700 whitespace-pre-line">
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">Your Message</p>
+            <div className="bg-white dark:bg-[rgb(var(--surface-2))] border border-gray-200 dark:border-[rgb(var(--border-2))] rounded-xl p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
               {ticket.message}
             </div>
             {ticket.image_urls?.length > 0 && (
@@ -274,21 +274,21 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
               key={reply.id}
               className={`rounded-xl border p-3 text-sm ${
                 reply.author_type === "admin"
-                  ? "bg-brand-50 border-brand-200"
-                  : "bg-white border-gray-200"
+                  ? "bg-brand-50 border-brand-200 dark:bg-[rgb(15_40_25/0.5)] dark:border-[rgb(22_163_74/0.3)]"
+                  : "bg-white border-gray-200 dark:bg-[rgb(var(--surface-2))] dark:border-[rgb(var(--border-2))]"
               }`}
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
                   reply.author_type === "admin"
                     ? "bg-brand-600 text-white"
-                    : "bg-gray-200 text-gray-700"
+                    : "bg-gray-200 dark:bg-[rgb(var(--surface-3))] text-gray-700 dark:text-gray-300"
                 }`}>
                   {reply.author_type === "admin" ? "Support" : "You"}
                 </span>
                 <span className="text-[10px] text-gray-400">{formatDate(reply.created_at)}</span>
               </div>
-              <p className="text-gray-700 whitespace-pre-line">{reply.message}</p>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{reply.message}</p>
               {reply.image_urls?.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {reply.image_urls.map((url, i) => (
@@ -304,7 +304,7 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
           {/* Reply composer — only if not closed */}
           {!isClosed ? (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-gray-600">Add Reply</p>
+              <p className="text-xs font-bold text-gray-600 dark:text-gray-400">Add Reply</p>
               <textarea
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
@@ -328,7 +328,7 @@ function TicketCard({ ticket, onUpdated }: { ticket: SupportTicket; onUpdated: (
                 <button
                   onClick={closeTicket}
                   disabled={closing}
-                  className="flex items-center gap-2 border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs font-bold px-3 py-2 rounded-xl transition-colors disabled:opacity-60"
+                  className="flex items-center gap-2 border border-gray-200 dark:border-[rgb(var(--border-2))] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[rgb(var(--surface-3))] text-xs font-bold px-3 py-2 rounded-xl transition-colors disabled:opacity-60"
                 >
                   {closing
                     ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -449,7 +449,7 @@ export default function SupportPage() {
                   key={s}
                   type="button"
                   onClick={() => setValue("subject", s)}
-                  className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-brand-100 hover:text-brand-700 rounded-full transition-colors"
+                  className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-[rgb(var(--surface-3))] text-gray-700 dark:text-gray-300 hover:bg-brand-100 dark:hover:bg-[rgb(15_40_25)] hover:text-brand-700 dark:hover:text-green-400 rounded-full transition-colors"
                 >
                   {s}
                 </button>
@@ -503,7 +503,7 @@ export default function SupportPage() {
               <ImageUploadRow urls={newTicketImages} onChange={setNewTicketImages} />
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+            <div className="bg-blue-50 dark:bg-[rgb(8_18_45)] border border-blue-200 dark:border-blue-800/40 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-300">
               <strong>Tips for faster resolution:</strong> Include your order number, photos of any issues, and a clear description.
             </div>
 
@@ -556,11 +556,11 @@ export default function SupportPage() {
             { icon: "📞", title: "Phone",  info: "+91 98765 43210" },
             { icon: "🕐", title: "Hours",  info: "Mon–Sat, 10am–7pm" },
           ].map(c => (
-            <div key={c.title} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <span className="text-2xl">{c.icon}</span>
-              <div>
-                <p className="font-semibold text-gray-700">{c.title}</p>
-                <p className="text-gray-500 text-xs">{c.info}</p>
+            <div key={c.title} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-[rgb(var(--surface-2))] rounded-lg">
+            <span className="text-2xl">{c.icon}</span>
+            <div>
+            <p className="font-semibold text-gray-700 dark:text-gray-300">{c.title}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs">{c.info}</p>
               </div>
             </div>
           ))}

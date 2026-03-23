@@ -506,7 +506,7 @@ export default function AdminOrdersPage() {
 
       {/* ── Order detail side panel ───────────────────────────────────────── */}
       {selectedOrder && (
-        <div className="w-[440px] shrink-0 bg-white border-l border-gray-200 flex flex-col h-full overflow-hidden">
+        <div className="w-[440px] shrink-0 bg-white border-l border-gray-200 dark:border-[rgb(var(--border-2))] flex flex-col h-full overflow-hidden">
           <OrderDetail orderId={selectedOrder} onClose={() => setSelectedOrder(null)} />
         </div>
       )}

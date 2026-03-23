@@ -52,7 +52,7 @@ const STATS = [
 
 export default function AboutPage() {
   return (
-    <div className="bg-white">
+    <div className="bg-white dark:bg-[rgb(var(--surface-1))]">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-brand-900 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -145,7 +145,7 @@ export default function AboutPage() {
             <a
               key={cat}
               href={`/products?category=${encodeURIComponent(cat.toLowerCase().replace(/ /g, "-"))}`}
-              className="bg-white border border-gray-200 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 text-gray-700 text-sm font-semibold px-4 py-2 rounded-full transition-all"
+              className="bg-white border border-gray-200 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-[rgb(15_40_25)] hover:text-brand-700 text-gray-700 text-sm font-semibold px-4 py-2 rounded-full transition-all"
             >
               {cat}
             </a>
@@ -181,7 +181,7 @@ export default function AboutPage() {
           {CITIES.map(city => (
             <span
               key={city}
-              className="flex items-center gap-1.5 bg-brand-50 border border-brand-100 text-brand-700 text-sm font-semibold px-4 py-2 rounded-full"
+              className="flex items-center gap-1.5 bg-brand-50 dark:bg-[rgb(12_30_18)] border border-brand-100 dark:border-brand-900 text-brand-700 dark:text-brand-400 text-sm font-semibold px-4 py-2 rounded-full"
             >
               <span className="text-base">📍</span> {city}
             </span>
@@ -198,7 +198,7 @@ export default function AboutPage() {
           </p>
           <a
             href="/products"
-            className="inline-block bg-white text-brand-700 font-black px-8 py-4 rounded-2xl text-sm hover:bg-brand-50 transition-all hover:scale-105 active:scale-100 shadow-lg"
+            className="inline-block bg-white dark:bg-[rgb(var(--surface-0))] text-brand-700 dark:text-brand-400 font-black px-8 py-4 rounded-2xl text-sm hover:bg-brand-50 dark:hover:bg-[rgb(var(--surface-2))] transition-all hover:scale-105 active:scale-100 shadow-lg"
           >
             Shop Now →
           </a>
