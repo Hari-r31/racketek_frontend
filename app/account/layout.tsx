@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { useAuth } from "@/context/AuthContext";
 import {
   User, Lock, ShoppingBag, Heart, MapPin,
   Headphones, RotateCcw, Shield, LogOut,
@@ -25,7 +26,8 @@ const NAV = [
 ];
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const { logout } = useAuth();
   const pathname = usePathname();
   const router   = useRouter();
 
@@ -75,7 +77,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                 </div>
 
                 <button
-                  onClick={() => { logout(); router.push("/"); }}
+                  onClick={async () => { await logout(); router.push("/"); }}
                   className="hidden sm:flex items-center gap-2 text-sm text-red-500 hover:text-red-600 font-semibold border border-red-100 hover:border-red-300 px-3 py-2 rounded-xl transition-all"
                 >
                   <LogOut size={14} /> Sign Out

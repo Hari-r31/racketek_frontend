@@ -7,7 +7,6 @@ export interface User {
   role: "customer" | "staff" | "admin" | "super_admin";
   is_active: boolean;
   is_email_verified: boolean;
-  is_phone_verified?: boolean;
   profile_image?: string;
   date_of_birth?: string;
   address_line1?: string;
@@ -19,10 +18,11 @@ export interface User {
 
 export interface TokenResponse {
   access_token: string;
-  refresh_token: string;
   token_type: string;
   user: User;
   is_new_user?: boolean;
+  // NOTE: refresh_token is NOT in this response.
+  // The backend sets it exclusively as an httpOnly cookie via Set-Cookie.
 }
 
 // ── Products ───────────────────────────────────────────────────────────────

@@ -3,21 +3,28 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Zap, Mail, Phone, ArrowLeft, ShieldCheck, Loader2, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Zap, Mail, ArrowLeft, ShieldCheck, Loader2, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
 import { useThemeStore } from "@/store/uiStore";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import toast from "react-hot-toast";
 
-type Step = "contact" | "otp" | "reset" | "done";
-type Method = "email" | "phone";
+type Step = "email" | "otp" | "reset" | "done";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
 
-/* ── tiny OTP input ────────────────────────────────────────────────────── */
-function OtpInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+/* ── 6-digit OTP input ─────────────────────────────────────────────────── */
+function OtpInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -35,7 +42,10 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
 
   const handlePaste = (e: React.ClipboardEvent) => {
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
-    if (pasted) { onChange(pasted.padEnd(OTP_LENGTH, "")); inputs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus(); }
+    if (pasted) {
+      onChange(pasted.padEnd(OTP_LENGTH, ""));
+      inputs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
+    }
     e.preventDefault();
   };
 
@@ -48,10 +58,11 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
           type="text"
           inputMode="numeric"
           maxLength={1}
+          disabled={disabled}
           value={value[i] || ""}
           onChange={e => handleChange(i, e.target.value)}
           onKeyDown={e => handleKey(i, e)}
-          className="w-12 h-14 text-center text-xl font-black rounded-xl border-2 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 transition-all bg-gray-50 text-gray-900 dark:bg-[rgb(28,28,42)] dark:text-gray-100 dark:focus:ring-brand-900"
+          className="w-12 h-14 text-center text-xl font-black rounded-xl border-2 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 transition-all bg-gray-50 text-gray-900 disabled:opacity-40"
           style={{ borderColor: value[i] ? "#16a34a" : undefined }}
         />
       ))}
@@ -60,70 +71,92 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
 }
 
 /* ── Resend countdown ──────────────────────────────────────────────────── */
-function ResendTimer({ onResend, loading }: { onResend: () => void; loading: boolean }) {
+function ResendTimer({
+  resetKey,
+  onResend,
+  loading,
+}: {
+  resetKey: number;
+  onResend: () => void;
+  loading: boolean;
+}) {
   const [secs, setSecs] = useState(RESEND_SECONDS);
 
   useEffect(() => {
     setSecs(RESEND_SECONDS);
-    const t = setInterval(() => setSecs(s => { if (s <= 1) { clearInterval(t); return 0; } return s - 1; }), 1000);
+    const t = setInterval(() => {
+      setSecs(s => {
+        if (s <= 1) { clearInterval(t); return 0; }
+        return s - 1;
+      });
+    }, 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [resetKey]);
 
-  if (secs > 0) return (
-    <p className="text-sm text-gray-500 text-center">
-      Resend OTP in <span className="font-bold text-brand-600">{secs}s</span>
-    </p>
-  );
+  if (secs > 0) {
+    return (
+      <p className="text-sm text-gray-500 text-center">
+        Resend code in <span className="font-bold text-brand-600">{secs}s</span>
+      </p>
+    );
+  }
 
   return (
-    <button onClick={onResend} disabled={loading}
-      className="flex items-center gap-1.5 text-sm text-brand-600 font-semibold hover:underline mx-auto disabled:opacity-50">
+    <button
+      onClick={onResend}
+      disabled={loading}
+      className="flex items-center gap-1.5 text-sm text-brand-600 font-semibold hover:underline mx-auto disabled:opacity-50"
+    >
       <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-      Resend OTP
+      Resend Code
     </button>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════════════ */
 export default function ForgotPasswordPage() {
-  const router = useRouter();
+  const router  = useRouter();
   const { theme } = useThemeStore();
-  const isDark = theme === "dark";
+  const isDark  = theme === "dark";
 
-  const [step,        setStep]        = useState<Step>("contact");
-  const [method,      setMethod]      = useState<Method>("email");
-  const [contact,     setContact]     = useState("");
+  const [step,        setStep]        = useState<Step>("email");
+  const [email,       setEmail]       = useState("");
   const [otp,         setOtp]         = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPw,   setConfirmPw]   = useState("");
   const [showPw,      setShowPw]      = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading,     setLoading]     = useState(false);
-  const [resendKey,   setResendKey]   = useState(0); // bump to reset ResendTimer
+  const [resendKey,   setResendKey]   = useState(0);
 
-  const cardBg    = isDark ? "rgba(15,15,25,0.95)"  : "rgba(255,255,255,0.97)";
-  const cardBorder= isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.3)";
-  const labelCl   = isDark ? "#94a3b8" : "#4b5563";
-  const inputSt   = {
-    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb",
-    border:          isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e5e7eb",
-    color:           isDark ? "#f1f5f9" : "#111827",
-  };
+  const cardBg     = isDark ? "rgba(15,15,25,0.95)"   : "rgba(255,255,255,0.97)";
+  const cardBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.3)";
+  const labelCl    = isDark ? "#94a3b8" : "#4b5563";
 
-  /* ── Step 1: send OTP ─────────────────────────────────────────────── */
+  /* ── Step 1: send OTP to email ────────────────────────────────────── */
   const sendOtp = async () => {
-    if (!contact.trim()) { toast.error("Enter your email or phone number"); return; }
+    const trimmed = email.trim();
+    if (!trimmed) { toast.error("Enter your email address"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Enter a valid email address");
+      return;
+    }
     setLoading(true);
     try {
-      await api.post("/auth/forgot-password/send-otp", {
-        [method]: method === "email" ? contact.trim() : contact.trim().replace(/\D/g, ""),
-      });
-      toast.success(`OTP sent to your ${method}!`);
+      await api.post("/auth/forgot-password/send-otp", { email: trimmed });
+      // Anti-enumeration: backend always returns 200 — show a neutral message
+      toast.success("If an account exists, a reset code has been sent.");
       setOtp("");
       setStep("otp");
       setResendKey(k => k + 1);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Could not send OTP. Check your details.");
+      // 429 = cooldown
+      const detail = e?.response?.data?.detail;
+      if (e?.response?.status === 429) {
+        toast.error(detail || "Please wait before requesting another code.");
+      } else {
+        toast.error(detail || "Could not send reset code. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -131,17 +164,20 @@ export default function ForgotPasswordPage() {
 
   /* ── Step 2: verify OTP ───────────────────────────────────────────── */
   const verifyOtp = async () => {
-    if (otp.replace(/\s/g, "").length < OTP_LENGTH) { toast.error("Enter the full 6-digit OTP"); return; }
+    if (otp.replace(/\s/g, "").length < OTP_LENGTH) {
+      toast.error("Enter the full 6-digit code");
+      return;
+    }
     setLoading(true);
     try {
       await api.post("/auth/forgot-password/verify-otp", {
-        [method]: method === "email" ? contact.trim() : contact.trim().replace(/\D/g, ""),
-        otp: otp.trim(),
+        email: email.trim(),
+        otp:   otp.trim(),
       });
-      toast.success("OTP verified! Set your new password.");
+      toast.success("Code verified! Set your new password.");
       setStep("reset");
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Invalid or expired OTP.");
+      toast.error(e?.response?.data?.detail || "Invalid or expired code.");
     } finally {
       setLoading(false);
     }
@@ -149,18 +185,29 @@ export default function ForgotPasswordPage() {
 
   /* ── Step 3: reset password ───────────────────────────────────────── */
   const resetPassword = async () => {
-    if (!newPassword || newPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
-    if (newPassword !== confirmPw) { toast.error("Passwords do not match"); return; }
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmPw) {
+      toast.error("Passwords do not match");
+      return;
+    }
     setLoading(true);
     try {
       await api.post("/auth/forgot-password/reset", {
-        [method]: method === "email" ? contact.trim() : contact.trim().replace(/\D/g, ""),
+        email:        email.trim(),
         otp:          otp.trim(),
         new_password: newPassword,
       });
       setStep("done");
     } catch (e: any) {
       toast.error(e?.response?.data?.detail || "Failed to reset password. Please start over.");
+      // If the OTP expired between verify and reset, send them back to start
+      if (e?.response?.status === 400) {
+        setStep("email");
+        setOtp("");
+      }
     } finally {
       setLoading(false);
     }
@@ -175,12 +222,13 @@ export default function ForgotPasswordPage() {
     if (/[A-Z]/.test(p)) s++;
     if (/[0-9]/.test(p)) s++;
     if (/[^A-Za-z0-9]/.test(p)) s++;
-    return { score: s, ...([
-      { label: "Weak",   color: "bg-red-500"    },
-      { label: "Fair",   color: "bg-orange-400"  },
-      { label: "Good",   color: "bg-yellow-500"  },
-      { label: "Strong", color: "bg-green-500"   },
-    ][Math.min(s - 1, 3)] ?? { label: "", color: "" }) };
+    const levels = [
+      { label: "Weak",   color: "bg-red-500"   },
+      { label: "Fair",   color: "bg-orange-400" },
+      { label: "Good",   color: "bg-yellow-500" },
+      { label: "Strong", color: "bg-green-500"  },
+    ];
+    return { score: s, ...(levels[Math.min(s - 1, 3)] ?? { label: "", color: "" }) };
   })();
 
   return (
@@ -193,7 +241,7 @@ export default function ForgotPasswordPage() {
             : "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #052e16 100%)",
         }}
       >
-        {/* Blobs */}
+        {/* Background blobs */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl" />
@@ -230,62 +278,70 @@ export default function ForgotPasswordPage() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.25 }}
               className="rounded-2xl shadow-2xl p-8 border"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder, backdropFilter: "blur(12px)" }}
+              style={{
+                backgroundColor: cardBg,
+                borderColor:     cardBorder,
+                backdropFilter:  "blur(12px)",
+              }}
             >
 
-              {/* ── Step: contact ────────────────────────────────────── */}
-              {step === "contact" && (
+              {/* ── Step: email ──────────────────────────────────────── */}
+              {step === "email" && (
                 <>
-                  <h1 className="text-2xl font-black mb-1" style={{ color: isDark ? "#f1f5f9" : "#111827" }}>
+                  <h1
+                    className="text-2xl font-black mb-1"
+                    style={{ color: isDark ? "#f1f5f9" : "#111827" }}
+                  >
                     Forgot Password? 🔑
                   </h1>
                   <p className="text-sm mb-6" style={{ color: isDark ? "#94a3b8" : "#6b7280" }}>
-                    We'll send a 6-digit OTP to verify your identity.
+                    Enter your account email and we'll send a 6-digit reset code.
                   </p>
 
-                  {/* Method toggle */}
-                  <div className="flex rounded-xl overflow-hidden border mb-6" style={{ borderColor: isDark ? "rgba(255,255,255,0.12)" : "#e5e7eb" }}>
-                    {(["email", "phone"] as Method[]).map(m => (
-                      <button
-                        key={m}
-                        onClick={() => { setMethod(m); setContact(""); }}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all"
-                        style={{
-                          backgroundColor: method === m ? "#16a34a" : "transparent",
-                          color: method === m ? "#fff" : isDark ? "#94a3b8" : "#6b7280",
-                        }}
-                      >
-                        {m === "email" ? <Mail size={14} /> : <Phone size={14} />}
-                        {m === "email" ? "Email" : "Phone"}
-                      </button>
-                    ))}
-                  </div>
-
                   <div className="mb-5">
-                    <label className="text-xs font-bold uppercase tracking-wider block mb-1.5" style={{ color: labelCl }}>
-                      {method === "email" ? "Email Address" : "Mobile Number"}
+                    <label
+                      className="text-xs font-bold uppercase tracking-wider block mb-1.5"
+                      style={{ color: labelCl }}
+                    >
+                      Email Address
                     </label>
-                    <input
-                      type={method === "email" ? "email" : "tel"}
-                      value={contact}
-                      onChange={e => setContact(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && sendOtp()}
-                      placeholder={method === "email" ? "you@example.com" : "+91 XXXXX XXXXX"}
-                      autoFocus
-                      className="input"
-                    />
+                    <div className="relative">
+                      <Mail
+                        size={14}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && sendOtp()}
+                        placeholder="you@example.com"
+                        autoFocus
+                        autoComplete="email"
+                        className="input pl-9"
+                      />
+                    </div>
                   </div>
 
-                  <button onClick={sendOtp} disabled={loading}
-                    className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base">
+                  <button
+                    onClick={sendOtp}
+                    disabled={loading}
+                    className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base"
+                  >
                     {loading
                       ? <Loader2 size={18} className="animate-spin" />
-                      : <>{method === "email" ? <Mail size={18} /> : <Phone size={18} />} Send OTP</>}
+                      : <><Mail size={18} /> Send Reset Code</>
+                    }
                   </button>
 
-                  <p className="text-center text-sm mt-4" style={{ color: isDark ? "#64748b" : "#6b7280" }}>
+                  <p
+                    className="text-center text-sm mt-4"
+                    style={{ color: isDark ? "#64748b" : "#6b7280" }}
+                  >
                     Remember your password?{" "}
-                    <Link href="/auth/login" className="text-brand-500 font-semibold hover:underline">Sign in</Link>
+                    <Link href="/auth/login" className="text-brand-500 font-semibold hover:underline">
+                      Sign in
+                    </Link>
                   </p>
                 </>
               )}
@@ -293,31 +349,42 @@ export default function ForgotPasswordPage() {
               {/* ── Step: OTP ────────────────────────────────────────── */}
               {step === "otp" && (
                 <>
-                  <button onClick={() => setStep("contact")}
+                  <button
+                    onClick={() => { setStep("email"); setOtp(""); }}
                     className="flex items-center gap-1.5 text-sm mb-5 hover:text-brand-600 transition-colors"
-                    style={{ color: isDark ? "#94a3b8" : "#6b7280" }}>
+                    style={{ color: isDark ? "#94a3b8" : "#6b7280" }}
+                  >
                     <ArrowLeft size={14} /> Back
                   </button>
-                  <h1 className="text-2xl font-black mb-1" style={{ color: isDark ? "#f1f5f9" : "#111827" }}>
-                    Enter OTP 🔢
+
+                  <h1
+                    className="text-2xl font-black mb-1"
+                    style={{ color: isDark ? "#f1f5f9" : "#111827" }}
+                  >
+                    Enter Reset Code 🔢
                   </h1>
                   <p className="text-sm mb-6" style={{ color: isDark ? "#94a3b8" : "#6b7280" }}>
                     We sent a 6-digit code to{" "}
-                    <span className="font-semibold text-brand-500">{contact}</span>
+                    <span className="font-semibold text-brand-500">{email}</span>.
+                    {" "}Check your inbox and spam folder.
                   </p>
 
                   <div className="mb-6">
-                    <OtpInput value={otp} onChange={setOtp} />
+                    <OtpInput value={otp} onChange={setOtp} disabled={loading} />
                   </div>
 
-                  <button onClick={verifyOtp} disabled={loading || otp.replace(/\s/g,"").length < OTP_LENGTH}
-                    className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base mb-4 disabled:opacity-50">
+                  <button
+                    onClick={verifyOtp}
+                    disabled={loading || otp.replace(/\s/g, "").length < OTP_LENGTH}
+                    className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base mb-4 disabled:opacity-50"
+                  >
                     {loading
                       ? <Loader2 size={18} className="animate-spin" />
-                      : <><ShieldCheck size={18} /> Verify OTP</>}
+                      : <><ShieldCheck size={18} /> Verify Code</>
+                    }
                   </button>
 
-                  <ResendTimer key={resendKey} onResend={sendOtp} loading={loading} />
+                  <ResendTimer resetKey={resendKey} onResend={sendOtp} loading={loading} />
                 </>
               )}
 
@@ -325,11 +392,14 @@ export default function ForgotPasswordPage() {
               {step === "reset" && (
                 <>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
                       <ShieldCheck size={18} className="text-green-600" />
                     </div>
                     <div>
-                      <h1 className="text-xl font-black" style={{ color: isDark ? "#f1f5f9" : "#111827" }}>
+                      <h1
+                        className="text-xl font-black"
+                        style={{ color: isDark ? "#f1f5f9" : "#111827" }}
+                      >
                         Set New Password
                       </h1>
                       <p className="text-xs" style={{ color: isDark ? "#94a3b8" : "#6b7280" }}>
@@ -339,8 +409,12 @@ export default function ForgotPasswordPage() {
                   </div>
 
                   <div className="space-y-4 mb-5">
+                    {/* New password */}
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-wider block mb-1.5" style={{ color: labelCl }}>
+                      <label
+                        className="text-xs font-bold uppercase tracking-wider block mb-1.5"
+                        style={{ color: labelCl }}
+                      >
                         New Password
                       </label>
                       <div className="relative">
@@ -350,30 +424,47 @@ export default function ForgotPasswordPage() {
                           onChange={e => setNewPassword(e.target.value)}
                           placeholder="Minimum 6 characters"
                           autoFocus
+                          autoComplete="new-password"
                           className="input pr-10"
                         />
-                        <button type="button" onClick={() => setShowPw(!showPw)}
+                        <button
+                          type="button"
+                          onClick={() => setShowPw(!showPw)}
                           className="absolute right-3 top-1/2 -translate-y-1/2"
-                          style={{ color: isDark ? "#64748b" : "#9ca3af" }}>
+                          style={{ color: isDark ? "#64748b" : "#9ca3af" }}
+                        >
                           {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                       {newPassword && (
                         <div className="mt-2">
                           <div className="flex gap-1 mb-1">
-                            {[1,2,3,4].map(i => (
-                              <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= strength.score ? strength.color : "bg-gray-200"}`} />
+                            {[1, 2, 3, 4].map(i => (
+                              <div
+                                key={i}
+                                className={`h-1 flex-1 rounded-full transition-all ${
+                                  i <= strength.score ? strength.color : "bg-gray-200"
+                                }`}
+                              />
                             ))}
                           </div>
-                          <p className={`text-xs font-semibold ${strength.score >= 3 ? "text-green-600" : strength.score >= 2 ? "text-yellow-600" : "text-red-500"}`}>
+                          <p className={`text-xs font-semibold ${
+                            strength.score >= 3 ? "text-green-600"
+                            : strength.score >= 2 ? "text-yellow-600"
+                            : "text-red-500"
+                          }`}>
                             {strength.label}
                           </p>
                         </div>
                       )}
                     </div>
 
+                    {/* Confirm password */}
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-wider block mb-1.5" style={{ color: labelCl }}>
+                      <label
+                        className="text-xs font-bold uppercase tracking-wider block mb-1.5"
+                        style={{ color: labelCl }}
+                      >
                         Confirm Password
                       </label>
                       <div className="relative">
@@ -383,11 +474,19 @@ export default function ForgotPasswordPage() {
                           onChange={e => setConfirmPw(e.target.value)}
                           onKeyDown={e => e.key === "Enter" && resetPassword()}
                           placeholder="Repeat new password"
-                          className={`input pr-10 ${confirmPw && newPassword !== confirmPw ? "border-red-400 focus:ring-red-300" : ""}`}
+                          autoComplete="new-password"
+                          className={`input pr-10 ${
+                            confirmPw && newPassword !== confirmPw
+                              ? "border-red-400 focus:ring-red-300"
+                              : ""
+                          }`}
                         />
-                        <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirm(!showConfirm)}
                           className="absolute right-3 top-1/2 -translate-y-1/2"
-                          style={{ color: isDark ? "#64748b" : "#9ca3af" }}>
+                          style={{ color: isDark ? "#64748b" : "#9ca3af" }}
+                        >
                           {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
@@ -397,11 +496,15 @@ export default function ForgotPasswordPage() {
                     </div>
                   </div>
 
-                  <button onClick={resetPassword} disabled={loading}
-                    className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base">
+                  <button
+                    onClick={resetPassword}
+                    disabled={loading}
+                    className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base"
+                  >
                     {loading
                       ? <Loader2 size={18} className="animate-spin" />
-                      : <><ShieldCheck size={18} /> Reset Password</>}
+                      : <><ShieldCheck size={18} /> Reset Password</>
+                    }
                   </button>
                 </>
               )}
@@ -412,14 +515,19 @@ export default function ForgotPasswordPage() {
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <ShieldCheck size={32} className="text-green-600" />
                   </div>
-                  <h1 className="text-2xl font-black mb-2" style={{ color: isDark ? "#f1f5f9" : "#111827" }}>
+                  <h1
+                    className="text-2xl font-black mb-2"
+                    style={{ color: isDark ? "#f1f5f9" : "#111827" }}
+                  >
                     Password Reset! 🎉
                   </h1>
                   <p className="text-sm mb-6" style={{ color: isDark ? "#94a3b8" : "#6b7280" }}>
-                    Your password has been updated successfully. You can now sign in with your new password.
+                    Your password has been updated. You can now sign in with your new password.
                   </p>
-                  <button onClick={() => router.push("/auth/login")}
-                    className="btn-primary w-full py-3 text-base">
+                  <button
+                    onClick={() => router.push("/auth/login")}
+                    className="btn-primary w-full py-3 text-base"
+                  >
                     Go to Sign In
                   </button>
                 </div>

@@ -227,10 +227,10 @@ export default function AccountProfilePage() {
     return (
       <button
         onClick={() => profileMut.mutate(form)}
-        disabled={profileMut.isLoading}
+        disabled={profileMut.isPending}
         className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-sm transition-all hover:scale-[1.01] active:scale-100 disabled:opacity-60"
       >
-        {profileMut.isLoading
+        {profileMut.isPending
           ? <Loader2 size={14} className="animate-spin" />
           : <Save size={14} />}
         {label}

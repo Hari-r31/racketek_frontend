@@ -8,6 +8,7 @@ import {
   MoreHorizontal, Home, Tag, Layers,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { useAuth } from "@/context/AuthContext";
 import { useUIStore, useCartStore, useThemeStore } from "@/store/uiStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { getInitials } from "@/lib/utils";
@@ -398,7 +399,8 @@ function NavbarInner() {
   const router       = useRouter();
   const pathname     = usePathname();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const { logout } = useAuth();
   const { mobileMenuOpen, setMobileMenuOpen } = useUIStore();
   const { count } = useCartStore();
 
@@ -450,7 +452,7 @@ function NavbarInner() {
     setMobileMenuOpen(false);
   };
 
-  const handleLogout = () => { logout(); router.push("/"); setUserMenu(false); setMobileMenuOpen(false); };
+  const handleLogout = async () => { await logout(); router.push("/"); setUserMenu(false); setMobileMenuOpen(false); };
   const handleDrawerNav = () => { setMobileMenuOpen(false); setNavLoading(true); };
 
   const visibleCats  = categories.slice(0, MAX_VIS);

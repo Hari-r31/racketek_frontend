@@ -4,10 +4,11 @@ import { useMutation } from "@tanstack/react-query";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import {
   Lock, Eye, EyeOff, Loader2, Trash2, AlertTriangle, ShieldCheck,
-  Mail, Phone, CheckCircle2, RefreshCw,
+  Mail, CheckCircle2, RefreshCw,
 } from "lucide-react";
 
 const OTP_LENGTH = 6;
@@ -202,7 +203,8 @@ function OtpVerifyCard({
 
 /* ════════════════════════════════════════════════════════════════════════ */
 export default function SecurityPage() {
-  const { user, logout, updateUser } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
+  const { logout } = useAuth();
   const router = useRouter();
 
   const [pw, setPw] = useState({ current: "", new: "", confirm: "" });
@@ -215,7 +217,6 @@ export default function SecurityPage() {
 
   // local optimistic state for verified flags
   const [emailVerified, setEmailVerified] = useState(!!user?.is_email_verified);
-  const [phoneVerified, setPhoneVerified] = useState(!!user?.is_phone_verified);
 
   const strength = (() => {
     const p = pw.new;
@@ -244,14 +245,14 @@ export default function SecurityPage() {
     onSuccess: () => {
       toast.success("Password changed! Please log in again.");
       setPw({ current: "", new: "", confirm: "" });
-      setTimeout(() => { logout(); router.push("/auth/login"); }, 1500);
+      setTimeout(async () => { await logout(); router.push("/auth/login"); }, 1500);
     },
     onError: (e: any) => toast.error(e?.response?.data?.detail || "Failed to change password"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => api.delete("/users/account", { data: { password: deletePassword } }),
-    onSuccess: () => { toast.success("Account deleted."); logout(); router.push("/"); },
+    onSuccess: async () => { toast.success("Account deleted."); await logout(); router.push("/"); },
     onError:   (e: any) => toast.error(e?.response?.data?.detail || "Failed to delete account"),
   });
 
@@ -291,44 +292,6 @@ export default function SecurityPage() {
               updateUser({ ...user!, is_email_verified: true });
             }}
           />
-        </div>
-      </div>
-
-      {/* ── Phone Verification ──────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
-            <Phone size={16} className="text-purple-600" />
-          </div>
-          <div>
-            <h2 className="font-black text-gray-900">Phone Verification</h2>
-            <p className="text-xs text-gray-500">Verify your mobile number via OTP</p>
-          </div>
-        </div>
-        <div className="p-5">
-          {user?.phone ? (
-            <OtpVerifyCard
-              type="phone"
-              icon={Phone}
-              label="Phone"
-              contact={user?.phone || ""}
-              isVerified={phoneVerified}
-              sendEndpoint="/users/send-phone-otp"
-              verifyEndpoint="/users/verify-phone-otp"
-              onVerified={() => {
-                setPhoneVerified(true);
-                updateUser({ ...user!, is_phone_verified: true });
-              }}
-            />
-          ) : (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">No phone number added to your account.</p>
-              <a href="/account"
-                className="text-xs text-brand-600 font-semibold hover:underline shrink-0 ml-4">
-                Add phone →
-              </a>
-            </div>
-          )}
         </div>
       </div>
 
@@ -394,9 +357,9 @@ export default function SecurityPage() {
             </div>
             {pw.confirm && pw.new !== pw.confirm && <p className="text-xs text-red-500 mt-1">Passwords do not match</p>}
           </div>
-          <button type="submit" disabled={changePwMutation.isLoading}
+          <button type="submit" disabled={changePwMutation.isPending}
             className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-60">
-            {changePwMutation.isLoading
+            {changePwMutation.isPending
               ? <><Loader2 size={15} className="animate-spin" /> Updating…</>
               : <><ShieldCheck size={15} /> Update Password</>}
           </button>
@@ -411,8 +374,7 @@ export default function SecurityPage() {
             { label: "Account ID",     value: `#${user?.id}` },
             { label: "Email",          value: user?.email },
             { label: "Email Status",   value: emailVerified ? "✓ Verified" : "⚠ Not Verified" },
-            { label: "Phone",          value: user?.phone || "—" },
-            { label: "Phone Status",   value: user?.phone ? (phoneVerified ? "✓ Verified" : "⚠ Not Verified") : "—" },
+            { label: "Phone",  value: user?.phone || "—" },
             { label: "Role",           value: user?.role?.replace("_", " ") },
             { label: "Account Status", value: "Active" },
           ].map(({ label, value }) => (
@@ -467,9 +429,9 @@ export default function SecurityPage() {
                 <button onClick={() => { setShowDeleteSection(false); setDeleteConfirm(""); setDeletePassword(""); }}
                   className="flex-1 border border-gray-300 text-gray-700 font-bold py-2.5 rounded-xl hover:bg-gray-50 text-sm">Cancel</button>
                 <button onClick={() => deleteMutation.mutate()}
-                  disabled={deleteConfirm !== "DELETE" || !deletePassword || deleteMutation.isLoading}
+                  disabled={deleteConfirm !== "DELETE" || !deletePassword || deleteMutation.isPending}
                   className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-50 text-sm">
-                  {deleteMutation.isLoading
+                  {deleteMutation.isPending
                     ? <><Loader2 size={14} className="animate-spin" /> Deleting…</>
                     : <><Trash2 size={14} /> Delete Account</>}
                 </button>
