@@ -80,7 +80,7 @@ export default function GoogleLoginButton({
             // Store access_token (refresh_token is set as httpOnly cookie by backend)
             setUser(data.user, data.access_token);
             // Sync AuthContext immediately so consumers reflect the new user
-            syncUser(data.user);
+            syncUser(data.user, data.access_token);
 
             if (data.is_new_user) {
               toast.success(`Welcome to Racketek, ${data.user.full_name.split(" ")[0]}! 🎉`);

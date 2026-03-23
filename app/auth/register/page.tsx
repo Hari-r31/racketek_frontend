@@ -45,7 +45,7 @@ export default function RegisterPage() {
 
   const afterLogin = (data: TokenResponse) => {
     setUser(data.user, data.access_token);
-    syncUser(data.user);
+    syncUser(data.user, data.access_token);
   };
 
   const onSubmit = async (data: FormData) => {

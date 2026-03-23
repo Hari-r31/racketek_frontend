@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   const afterLogin = async (data: TokenResponse) => {
     setUser(data.user, data.access_token);
-    syncUser(data.user); // keep AuthContext in sync
+    syncUser(data.user, data.access_token);
     try {
       const cartRes = await api.get("/cart");
       const active = cartRes.data.items?.filter((i: any) => !i.save_for_later).length || 0;
