@@ -53,7 +53,7 @@ const DEFAULTS: StoreSettings = {
 
 // ── Design primitives ────────────────────────────────────────────────────────
 const iCls =
-  "w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all bg-white";
+  "w-full border border-gray-300 dark:border-[rgb(var(--border-3))] rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all bg-white dark:bg-[rgb(var(--surface-2))] dark:text-[rgb(var(--text-900))]";
 
 function Field({
   label, sub, icon: Icon, children,

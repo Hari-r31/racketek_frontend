@@ -60,7 +60,7 @@ export default function TrackOrderPage() {
   const stepIndex = order ? STATUS_STEPS.indexOf(order.status) : -1;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white dark:bg-[rgb(var(--surface-1))] min-h-screen">
       <div className="bg-gray-50 border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -138,10 +138,10 @@ export default function TrackOrderPage() {
                   <p className="font-black text-gray-900 text-lg">{order.order_number}</p>
                 </div>
                 <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wide ${
-                  order.status === "delivered" ? "bg-green-100 text-green-700" :
-                  order.status === "cancelled" ? "bg-red-100 text-red-700" :
-                  order.status === "shipped" || order.status === "out_for_delivery" ? "bg-blue-100 text-blue-700" :
-                  "bg-yellow-100 text-yellow-700"
+                  order.status === "delivered" ? "bg-green-100 text-green-700 dark:bg-[rgb(12_45_22)] dark:text-[#86efac]" :
+                  order.status === "cancelled" ? "bg-red-100 text-red-700 dark:bg-[rgb(45_8_8)] dark:text-[#f87171]" :
+                  order.status === "shipped" || order.status === "out_for_delivery" ? "bg-blue-100 text-blue-700 dark:bg-[rgb(8_18_45)] dark:text-[#93c5fd]" :
+                  "bg-yellow-100 text-yellow-700 dark:bg-[rgb(45_32_0)] dark:text-[#fde68a]"
                 }`}>
                   {STATUS_LABELS[order.status] ?? order.status}
                 </span>
@@ -156,11 +156,11 @@ export default function TrackOrderPage() {
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
                           i <= stepIndex
                             ? "bg-brand-600 border-brand-600 text-white"
-                            : "bg-white border-gray-200 text-gray-400"
-                        }`}>
+                            : "bg-white dark:bg-[rgb(var(--surface-2))] border-gray-200 text-gray-400"
+                            }`}>
                           {i < stepIndex ? "✓" : i + 1}
                         </div>
-                        <span className={`text-[9px] font-bold text-center leading-tight ${i <= stepIndex ? "text-brand-600" : "text-gray-400"}`}>
+                        <span className={`text-[9px] font-bold text-center leading-tight ${i <= stepIndex ? "text-brand-600 dark:text-brand-400" : "text-gray-400"}`}>
                           {STATUS_LABELS[s]}
                         </span>
                       </div>

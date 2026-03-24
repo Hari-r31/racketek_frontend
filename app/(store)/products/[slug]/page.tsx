@@ -481,7 +481,7 @@ export default function ProductDetailPage() {
             )}
             {tabOpen === "shipping" && (
               <div className="max-w-2xl space-y-4 text-sm text-gray-600">
-                <div className="bg-brand-50 border border-brand-100 rounded-2xl p-5">
+                <div className="bg-brand-50 dark:bg-[rgb(12_30_18)] border border-brand-100 dark:border-brand-900 rounded-2xl p-5">
                   <h3 className="font-black text-brand-700 mb-2 flex items-center gap-2"><Truck size={16} /> Delivery</h3>
                   <p>Free shipping on all orders above ₹999. Standard delivery takes 5–7 business days. Express delivery (2–3 days) available at checkout.</p>
                 </div>

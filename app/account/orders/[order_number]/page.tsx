@@ -215,7 +215,7 @@ export default function OrderDetailPage() {
                 if (reason !== null) cancelMutation.mutate(reason || "Customer request");
               }}
               disabled={cancelMutation.isLoading}
-              className="w-full flex items-center justify-center gap-2 border border-red-300 text-red-600 rounded-lg py-2.5 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 border border-red-300 dark:border-red-800 text-red-600 rounded-lg py-2.5 text-sm font-medium hover:bg-red-50 dark:hover:bg-[rgb(45_8_8)] transition-colors disabled:opacity-50"
             >
               <XCircle size={16} /> Cancel Order
             </button>
@@ -232,7 +232,7 @@ export default function OrderDetailPage() {
 
           <Link
             href="/account/support"
-            className="w-full flex items-center justify-center gap-2 border border-brand-300 text-brand-600 rounded-lg py-2.5 text-sm font-medium hover:bg-brand-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 border border-brand-300 dark:border-brand-700 text-brand-600 rounded-lg py-2.5 text-sm font-medium hover:bg-brand-50 dark:hover:bg-[rgb(12_30_18)] transition-colors"
           >
             Contact Support
           </Link>

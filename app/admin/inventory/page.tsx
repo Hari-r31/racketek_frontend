@@ -231,7 +231,7 @@ export default function AdminInventoryPage() {
                 const editVal = stockEdits[p.id];
                 const isDirty = editVal !== undefined;
                 return (
-                  <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${isOut ? "bg-red-50/30" : isLow ? "bg-amber-50/30" : ""}`}>
+                  <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${isOut ? "bg-red-50/30 dark:bg-[rgb(45_8_8)]/20" : isLow ? "bg-amber-50/30 dark:bg-[rgb(45_28_0)]/20" : ""}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-9 h-9 bg-gray-100 rounded-lg overflow-hidden shrink-0">
@@ -279,7 +279,7 @@ export default function AdminInventoryPage() {
                           }
                           className={`w-24 border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 ${
                             isDirty
-                              ? "border-brand-400 ring-brand-200 bg-brand-50"
+                              ? "border-brand-400 ring-brand-200 bg-brand-50 dark:bg-[rgb(12_30_18)] dark:border-brand-700"
                               : "border-gray-200 focus:ring-brand-500"
                           }`}
                         />

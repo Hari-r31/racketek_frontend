@@ -170,15 +170,19 @@ html.dark .hover\:bg-orange-700:hover { background-color: rgb(154 52 18)   !impo
 /* ── Red semantic colors (danger zone, error states, delete actions) ─── */
 html.dark .bg-red-50             { background-color: rgb(45 8 8)        !important; }
 html.dark .bg-red-100            { background-color: rgb(60 10 10)       !important; }
+html.dark .text-red-400          { color: #fca5a5                        !important; }
+html.dark .text-red-500          { color: #f87171                        !important; }
 html.dark .text-red-600          { color: #f87171                        !important; }
 html.dark .text-red-700          { color: #f87171                        !important; }
 html.dark .text-red-800          { color: #fca5a5                        !important; }
 html.dark .text-red-900          { color: #fca5a5                        !important; }
 html.dark .border-red-100        { border-color: rgb(220 38 38 / 0.2)    !important; }
+html.dark .border-red-200        { border-color: rgb(220 38 38 / 0.3)    !important; }
 html.dark .border-red-300        { border-color: rgb(220 38 38 / 0.5)    !important; }
-html.dark .hover\:bg-red-50:hover { background-color: rgb(55 12 12)     !important; }
+html.dark .border-red-800        { border-color: rgb(220 38 38 / 0.4)    !important; }
+html.dark .hover\:bg-red-50:hover  { background-color: rgb(55 12 12)    !important; }
+html.dark .hover\:bg-red-100:hover { background-color: rgb(65 14 14)    !important; }
 html.dark .hover\:bg-red-700:hover { background-color: rgb(185 28 28)   !important; }
-/* Note: text-red-500 / border-red-100 / border-red-200 / hover:bg-red-50 already partially covered earlier */
 
 /* ── Blue semantic colors (info boxes, Razorpay card) ───────────────── */
 html.dark .text-blue-600         { color: #60a5fa                        !important; }
@@ -658,3 +662,34 @@ html.dark .skeleton-shimmer {
   background: linear-gradient(90deg, rgb(var(--surface-2)) 25%, rgb(var(--surface-3)) 50%, rgb(var(--surface-2)) 75%);
   background-size: 1000px 100%;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FINAL DARK MODE OVERRIDES — page-level wrappers & special cases
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Policy & static pages root wrapper ("bg-white min-h-screen") ────── */
+/* Used by: /track-order, /about, /policies/*, not-found               */
+html.dark .bg-white.min-h-screen { background-color: rgb(var(--surface-1)) !important; }
+
+/* ── Not-found page gradient background ─────────────────────────────── */
+html.dark .bg-gradient-to-br.from-gray-50.to-brand-50 {
+  background: linear-gradient(135deg, rgb(var(--surface-1)), rgb(12 30 18)) !important;
+}
+
+/* ── Admin orders selected row highlight ─────────────────────────────── */
+/* bg-brand-50 on selected row — already covered by bg-brand-50 override  */
+/* but needs table-row scope to prevent thead override from catching it  */
+html.dark tr.bg-brand-50 { background-color: rgb(12 30 18 / 0.5) !important; }
+
+/* ── Amber/warning card surfaces ─────────────────────────────────────── */
+html.dark .bg-amber-50  { background-color: rgb(38 25 5)         !important; }
+html.dark .text-amber-700 { color: #fde68a                       !important; }
+html.dark .border-amber-200 { border-color: rgb(180 83 9 / 0.4)  !important; }
+
+/* ── Purple text (admin sidebar sub-items) ───────────────────────────── */
+html.dark .text-purple-700  { color: #c084fc                      !important; }
+html.dark .text-purple-600  { color: #a855f7                      !important; }
+
+/* ── Amber/warning text (low-stock text in inventory) ────────────────── */
+html.dark .text-amber-600   { color: #fbbf24                      !important; }
+html.dark .text-amber-700   { color: #fde68a                      !important; }

@@ -77,7 +77,7 @@ export default function NotFound() {
         </Link>
         <Link
           href="/products"
-          className="bg-white border-2 border-gray-200 hover:border-brand-400 text-gray-700 hover:text-brand-600 font-black px-8 py-3.5 rounded-2xl text-sm transition-all hover:scale-105 active:scale-100"
+          className="bg-white dark:bg-[rgb(var(--surface-2))] border-2 border-gray-200 hover:border-brand-400 text-gray-700 hover:text-brand-600 font-black px-8 py-3.5 rounded-2xl text-sm transition-all hover:scale-105 active:scale-100"
         >
           🛒 Shop Instead
         </Link>

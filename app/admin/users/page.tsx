@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
                   {/* Name */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center text-xs font-black shrink-0">
+                      <div className="w-8 h-8 bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 rounded-full flex items-center justify-center text-xs font-black shrink-0">
                         {user.full_name?.charAt(0).toUpperCase()}
                       </div>
                       <span className="font-semibold text-gray-800">{user.full_name}</span>
@@ -225,8 +225,8 @@ export default function AdminUsersPage() {
                       disabled={updateUser.isLoading}
                       className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
                         user.is_active
-                          ? "border-red-200 text-red-600 hover:bg-red-50"
-                          : "border-green-200 text-green-600 hover:bg-green-50"
+                          ? "border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-[rgb(45_8_8)]"
+                          : "border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-[rgb(8_35_18)]"
                       }`}
                     >
                       {user.is_active

@@ -325,7 +325,7 @@ export default function ReviewSection({ productId, productSlug }: Props) {
               <div key={r.id} className="card p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                    <div className="w-9 h-9 bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                       {getInitials(r.user?.full_name || "C")}
                     </div>
                     <div>

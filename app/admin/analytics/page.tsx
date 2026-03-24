@@ -85,7 +85,7 @@ export default function AdminAnalyticsPage() {
         <h3 className="font-black text-gray-800 mb-5">Daily Revenue (Last {days} days)</h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={revenue || []}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" className="recharts-cartesian-grid" stroke="var(--chart-grid, #f0f0f0)" />
             <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
             <Tooltip formatter={(v: number) => [formatPrice(v), "Revenue"]} />
@@ -107,9 +107,9 @@ export default function AdminAnalyticsPage() {
                     <span className="text-sm font-medium text-gray-700 truncate">{p.product_name}</span>
                     <span className="text-sm font-bold text-gray-900 ml-2">{formatPrice(p.revenue)}</span>
                   </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full">
+                  <div className="h-1.5 bg-gray-200 dark:bg-[rgb(var(--surface-3))] rounded-full">
                     <div
-                      className="h-full bg-brand-500 rounded-full"
+                      className="h-full bg-brand-500 dark:bg-brand-400 rounded-full"
                       style={{ width: `${Math.min((p.revenue / (products?.[0]?.revenue || 1)) * 100, 100)}%` }}
                     />
                   </div>

@@ -164,7 +164,7 @@ export default function WishlistPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md hover:border-gray-200 transition-all"
+                className="bg-white dark:bg-[rgb(var(--surface-0))] rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md hover:border-gray-200 dark:hover:border-[rgb(var(--border-3))] transition-all"
               >
                 {/* Image */}
                 <div className="relative aspect-square bg-gray-50 overflow-hidden">
@@ -191,8 +191,8 @@ export default function WishlistPage() {
                   )}
 
                   {outOfStock && (
-                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                      <span className="text-xs font-black text-gray-600 bg-white px-3 py-1.5 rounded-full shadow-sm">
+                    <div className="absolute inset-0 bg-white/60 dark:bg-[rgb(var(--surface-0))]/60 flex items-center justify-center">
+                      <span className="text-xs font-black text-gray-600 bg-white dark:bg-[rgb(var(--surface-2))] px-3 py-1.5 rounded-full shadow-sm">
                         Out of Stock
                       </span>
                     </div>
@@ -202,7 +202,7 @@ export default function WishlistPage() {
                   <button
                     onClick={() => removeMutation.mutate(product.id)}
                     disabled={removeMutation.isLoading}
-                    className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    className="absolute top-2 right-2 w-8 h-8 bg-gray-100 dark:bg-[rgb(var(--surface-3))] rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 size={13} />
                   </button>

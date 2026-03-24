@@ -109,7 +109,7 @@ export default function AdminCouponsPage() {
 
       {/* ── Create Form ─────────────────────────────────────────────── */}
       {showForm && (
-        <div className="bg-white rounded-xl border border-brand-200 p-6 shadow-sm">
+        <div className="bg-white rounded-xl border border-brand-200 dark:border-brand-800 dark:bg-[rgb(var(--surface-0))] p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-black text-gray-900">New Coupon</h2>
             <button onClick={() => { setShowForm(false); reset(); }} className="text-gray-400 hover:text-gray-600">
@@ -233,7 +233,7 @@ export default function AdminCouponsPage() {
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div>
-                        <span className="font-mono font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded text-sm">
+                        <span className="font-mono font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/40 px-2 py-0.5 rounded text-sm">
                           {c.code}
                         </span>
                         {c.description && (
@@ -263,9 +263,9 @@ export default function AdminCouponsPage() {
                           {c.usage_limit != null ? ` / ${c.usage_limit}` : " / ∞"}
                         </span>
                         {c.usage_limit != null && (
-                          <div className="w-20 h-1.5 bg-gray-100 rounded-full mt-1">
+                          <div className="w-20 h-1.5 bg-gray-200 dark:bg-[rgb(var(--surface-3))] rounded-full mt-1">
                             <div
-                              className="h-full bg-brand-500 rounded-full"
+                              className="h-full bg-brand-500 dark:bg-brand-400 rounded-full"
                               style={{ width: `${Math.min((c.used_count / c.usage_limit) * 100, 100)}%` }}
                             />
                           </div>
