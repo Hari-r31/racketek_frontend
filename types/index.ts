@@ -48,6 +48,20 @@ export interface ProductVariant {
 export type DifficultyLevel = "beginner" | "intermediate" | "advanced";
 export type GenderCategory  = "male" | "female" | "unisex" | "boys" | "girls";
 
+/**
+ * Catalog v2 — Specification types
+ *
+ * specifications: Record of section name → Record of field key → scalar value
+ * Example:
+ *   {
+ *     "General":    { "Brand": "Yonex", "Color": "Black" },
+ *     "Dimensions": { "Weight": "85g", "Length": "675mm" }
+ *   }
+ */
+export type SpecificationSection = Record<string, string | number | boolean>;
+export type Specifications       = Record<string, SpecificationSection>;
+export type ManufacturerInfo     = Record<string, string | number | boolean>;
+
 export interface Product {
   id: number;
   name: string;
@@ -73,6 +87,11 @@ export interface Product {
   difficulty_level?: DifficultyLevel;
   // FEATURE 2 FIX
   gender?: GenderCategory;
+  // Catalog v2
+  highlights?: string[];
+  specifications?: Specifications;
+  manufacturer_info?: ManufacturerInfo;
+  extra_data?: Record<string, unknown>;
   images: ProductImage[];
   variants: ProductVariant[];
   created_at: string;

@@ -1,11 +1,12 @@
 "use client";
 /**
- * ProductDetailPage
+ * ProductDetailPage — Catalog v2
  *
- * FIX #9: Variant buttons now use flex-row with shrink-0 on each button
- * so they always display in a horizontal row and never collapse to a
- * single-column layout on narrow screens.  The container also has
- * overflow-x-auto so many variants scroll rather than wrap to a column.
+ * Changes vs previous version
+ * ───────────────────────────
+ * • Specs tab now renders ProductCatalogSections (dynamic, fully server-driven)
+ * • Highlights bullet list shown below short_description (above variants)
+ * • Tab list extended with "Details & Specs" tab when catalog data present
  */
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
@@ -24,8 +25,9 @@ import { formatPrice, getDiscountPercent } from "@/lib/utils";
 import { useAuthStore }     from "@/store/authStore";
 import { useCartItem, useCartActions } from "@/lib/useCart";
 import toast from "react-hot-toast";
-import ProductCard   from "@/components/products/ProductCard";
-import ReviewSection from "@/components/products/ReviewSection";
+import ProductCard            from "@/components/products/ProductCard";
+import ReviewSection          from "@/components/products/ReviewSection";
+import ProductCatalogSections from "@/components/products/ProductCatalogSections";
 
 export default function ProductDetailPage() {
   const { slug }            = useParams<{ slug: string }>();
@@ -151,9 +153,15 @@ export default function ProductDetailPage() {
     } catch { toast.error("Action failed"); }
   }
 
+  // ── Catalog v2 derived flags ───────────────────────────────────────────────
+  const hasSpecs        = !!product.specifications && Object.keys(product.specifications).length > 0;
+  const hasManufacturer = !!product.manufacturer_info && Object.keys(product.manufacturer_info).length > 0;
+  const hasHighlights   = Array.isArray(product.highlights) && product.highlights.length > 0;
+  const hasCatalogData  = hasSpecs || hasManufacturer || hasHighlights;
+
   const TABS = [
-    { id: "description", label: "Description"       },
-    { id: "specs",       label: "Specifications"    },
+    { id: "description", label: "Description" },
+    ...(hasCatalogData ? [{ id: "catalog", label: "Details & Specs" }] : []),
     { id: "shipping",    label: "Shipping & Returns" },
   ];
 
@@ -272,21 +280,27 @@ export default function ProductDetailPage() {
             </div>
 
             {product.short_description && (
-              <p className="text-gray-600 text-sm leading-relaxed mb-5">{product.short_description}</p>
+              <p className="text-gray-600 text-sm leading-relaxed mb-4">{product.short_description}</p>
             )}
 
-            {/* ── Variants — FIX #9 ────────────────────────────────────
-                Container: flex flex-row + overflow-x-auto so buttons
-                always sit in a horizontal row and scroll on mobile
-                rather than stacking into a column.
-                Each button: shrink-0 prevents it from collapsing.
-            ──────────────────────────────────────────────────────── */}
+            {/* ── Catalog v2: Highlights inline (above variants) ───── */}
+            {hasHighlights && (
+              <ul className="mb-5 space-y-1.5 bg-brand-50/60 border border-brand-100 rounded-xl px-4 py-3">
+                {product.highlights!.map((h, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                    <Check size={14} className="text-brand-600 shrink-0 mt-0.5" strokeWidth={3} />
+                    <span>{h}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* ── Variants ─────────────────────────────────────────── */}
             {Object.entries(varGroups).map(([name, variants]) => (
               <div key={name} className="mb-5">
                 <p className="text-xs font-black text-gray-600 uppercase tracking-wider mb-2">
                   {name}{selectedVar?.value && <span className="normal-case text-brand-600 font-bold ml-1">— {selectedVar.value}</span>}
                 </p>
-                {/* flex-row + overflow-x-auto = always a horizontal row */}
                 <div className="flex flex-row flex-wrap gap-2">
                   {variants.map((v) => {
                     const sel = variantId === v.id;
@@ -296,7 +310,6 @@ export default function ProductDetailPage() {
                         key={v.id}
                         onClick={() => !oos && setVariantId(v.id)}
                         disabled={oos}
-                        /* shrink-0 keeps each button its natural size */
                         className={`relative shrink-0 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
                           sel
                             ? "border-brand-600 bg-brand-600 text-white shadow-md"
@@ -396,7 +409,7 @@ export default function ProductDetailPage() {
               </AnimatePresence>
             </div>
 
-            {/* Delivery info */}
+            {/* ── Delivery info ─────────────────────────────────────── */}
             <div className="bg-gray-50 rounded-2xl p-4 space-y-3 mb-5">
               <div className="flex items-center gap-3">
                 <Truck size={16} className="text-brand-600 shrink-0" />
@@ -453,32 +466,23 @@ export default function ProductDetailPage() {
               ))}
             </div>
           </div>
+
           <div className="py-8">
+            {/* Description */}
             {tabOpen === "description" && (
               <div className="max-w-3xl text-gray-600 text-sm leading-relaxed whitespace-pre-line">
                 {product.description || product.short_description || "No description available."}
               </div>
             )}
-            {tabOpen === "specs" && (
-              <div className="max-w-2xl">
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-gray-100">
-                    {[
-                      { label: "Brand",  value: product.brand || "—" },
-                      { label: "SKU",    value: product.sku   || "—" },
-                      { label: "Status", value: product.status       },
-                      { label: "Stock",  value: `${product.stock} units` },
-                      ...(product.tags?.map((t) => ({ label: "Tag", value: t })) || []),
-                    ].map(({ label, value }) => (
-                      <tr key={label} className="hover:bg-gray-50">
-                        <td className="py-3 pr-6 font-bold text-gray-700 w-1/3">{label}</td>
-                        <td className="py-3 text-gray-600">{value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+            {/* Details & Specs — Catalog v2 */}
+            {tabOpen === "catalog" && (
+              <div className="max-w-3xl">
+                <ProductCatalogSections product={product} />
               </div>
             )}
+
+            {/* Shipping & Returns */}
             {tabOpen === "shipping" && (
               <div className="max-w-2xl space-y-4 text-sm text-gray-600">
                 <div className="bg-brand-50 dark:bg-[rgb(12_30_18)] border border-brand-100 dark:border-brand-900 rounded-2xl p-5">

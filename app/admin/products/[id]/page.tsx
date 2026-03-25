@@ -1,25 +1,23 @@
 "use client";
 /**
- * Admin New Product Page — Catalog v2
+ * Admin Edit Product Page — Catalog v2
  *
- * Added catalog v2 sections:
+ * Pre-populates all existing fields including:
  *   - Highlights        (HighlightsEditor)
- *   - Specifications    (SpecificationBuilder — dynamic admin-controlled)
+ *   - Specifications    (SpecificationBuilder)
  *   - Manufacturer Info (ManufacturerInfoEditor)
  *
- * BUG 1 FIX:   Difficulty Level dropdown (beginner / intermediate / advanced)
- * FEATURE 2:   Gender Category dropdown (male / female / unisex / boys / girls)
+ * Sends PATCH to /products/{id} with only changed fields.
  */
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Plus, Trash2, ArrowLeft, Upload, X, Star, ImageIcon,
-  RefreshCw, Sparkles,
+  RefreshCw, Sparkles, Save,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,9 +25,9 @@ import toast from "react-hot-toast";
 import SpecificationBuilder, { Specifications } from "@/components/admin/product/SpecificationBuilder";
 import HighlightsEditor     from "@/components/admin/product/HighlightsEditor";
 import ManufacturerInfoEditor from "@/components/admin/product/ManufacturerInfoEditor";
-import { ManufacturerInfo } from "@/types";
+import { ManufacturerInfo, Product } from "@/types";
 
-/* ─── Zod schema ─────────────────────────────────────────────────────────── */
+/* ─── Zod schema (same as new product) ──────────────────────────────────── */
 const variantSchema = z.object({
   name:           z.string().min(1, "Required"),
   value:          z.string().min(1, "Required"),
@@ -39,34 +37,33 @@ const variantSchema = z.object({
 });
 
 const schema = z.object({
-  name:               z.string().min(2, "Product name must be at least 2 characters"),
-  slug:               z.string().min(2, "Slug required").regex(/^[a-z0-9-]+$/, "Lowercase, numbers, hyphens only"),
-  sku:                z.string().optional(),
-  description:        z.string().optional(),
-  short_description:  z.string().optional(),
-  brand:              z.string().optional(),
-  price:              z.coerce.number().min(1, "Price must be greater than 0"),
-  compare_price:      z.coerce.number().optional(),
-  cost_price:         z.coerce.number().optional(),
-  stock:              z.coerce.number().min(0).default(0),
-  low_stock_threshold:z.coerce.number().min(0).default(5),
-  weight:             z.coerce.number().optional(),
-  status:             z.enum(["active","inactive","draft"]).default("active"),
-  is_featured:        z.boolean().default(false),
-  is_best_seller:     z.boolean().default(false),
-  category_id:        z.coerce.number().optional().nullable(),
-  meta_title:         z.string().optional(),
-  meta_description:   z.string().optional(),
-  // BUG 1 FIX
-  difficulty_level:   z.enum(["beginner","intermediate","advanced",""]).optional(),
-  // FEATURE 2
-  gender:             z.enum(["male","female","unisex","boys","girls",""]).optional(),
-  variants:           z.array(variantSchema).default([]),
+  name:                z.string().min(2, "Required"),
+  slug:                z.string().min(2, "Required").regex(/^[a-z0-9-]+$/, "Lowercase, numbers, hyphens only"),
+  sku:                 z.string().optional(),
+  description:         z.string().optional(),
+  short_description:   z.string().optional(),
+  brand:               z.string().optional(),
+  price:               z.coerce.number().min(1, "Required"),
+  compare_price:       z.coerce.number().optional(),
+  cost_price:          z.coerce.number().optional(),
+  stock:               z.coerce.number().min(0).default(0),
+  low_stock_threshold: z.coerce.number().min(0).default(5),
+  weight:              z.coerce.number().optional(),
+  status:              z.enum(["active","inactive","draft","out_of_stock"]).default("active"),
+  is_featured:         z.boolean().default(false),
+  is_best_seller:      z.boolean().default(false),
+  category_id:         z.coerce.number().optional().nullable(),
+  meta_title:          z.string().optional(),
+  meta_description:    z.string().optional(),
+  difficulty_level:    z.enum(["beginner","intermediate","advanced",""]).optional(),
+  gender:              z.enum(["male","female","unisex","boys","girls",""]).optional(),
+  variants:            z.array(variantSchema).default([]),
 });
 
 type FormData = z.infer<typeof schema>;
 
 interface UploadedImage {
+  id?:        number;
   url:        string;
   public_id?: string;
   alt_text:   string;
@@ -103,17 +100,6 @@ function Card({ title, subtitle, children }: { title: string; subtitle?: string;
   );
 }
 
-function toSlug(name: string) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-function toSku(name: string, brand: string) {
-  const namePart  = name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").slice(0, 12);
-  const brandPart = brand.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 4) || "PRD";
-  const rand      = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${brandPart}-${namePart}-${rand}`;
-}
-
 /* ════════════════════════════════════════════════════════════════════════════
    IMAGE UPLOAD PANEL
 ════════════════════════════════════════════════════════════════════════════ */
@@ -142,7 +128,7 @@ function ImageUploadPanel({
       }
       toast.success("Image(s) uploaded");
     } catch {
-      toast.error("Upload failed. Check file type/size.");
+      toast.error("Upload failed");
     } finally {
       setUploading(false);
     }
@@ -153,21 +139,18 @@ function ImageUploadPanel({
     if (e.dataTransfer.files.length) upload(e.dataTransfer.files);
   }, [images]);
 
-  const setPrimary = (idx: number) => {
+  const setPrimary = (idx: number) =>
     setImages(prev => prev.map((img, i) => ({ ...img, is_primary: i === idx })));
-  };
 
-  const removeImage = (idx: number) => {
+  const removeImage = (idx: number) =>
     setImages(prev => {
       const next = prev.filter((_, i) => i !== idx);
       if (prev[idx].is_primary && next.length > 0) next[0].is_primary = true;
       return next;
     });
-  };
 
-  const updateAlt = (idx: number, alt: string) => {
+  const updateAlt = (idx: number, alt: string) =>
     setImages(prev => prev.map((img, i) => i === idx ? { ...img, alt_text: alt } : img));
-  };
 
   return (
     <div className="space-y-4">
@@ -175,10 +158,10 @@ function ImageUploadPanel({
         onDragOver={e => e.preventDefault()}
         onDrop={onDrop}
         className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-brand-400 transition-colors cursor-pointer group"
-        onClick={() => document.getElementById("img-input")?.click()}
+        onClick={() => document.getElementById("img-input-edit")?.click()}
       >
         <input
-          id="img-input" type="file" accept="image/*" multiple className="hidden"
+          id="img-input-edit" type="file" accept="image/*" multiple className="hidden"
           onChange={e => e.target.files && upload(e.target.files)}
         />
         {uploading ? (
@@ -249,21 +232,23 @@ function ImageUploadPanel({
 /* ════════════════════════════════════════════════════════════════════════════
    MAIN PAGE
 ════════════════════════════════════════════════════════════════════════════ */
-export default function NewProductPage() {
-  const router = useRouter();
-  const qc     = useQueryClient();
+export default function EditProductPage() {
+  const router     = useRouter();
+  const { id }     = useParams<{ id: string }>();
+  const qc         = useQueryClient();
   const [loading,          setLoading]          = useState(false);
   const [parentCatId,      setParentCatId]      = useState<number | "">("");
   const [images,           setImages]           = useState<UploadedImage[]>([]);
   const [serverError,      setServerError]      = useState<string | null>(null);
+  const [initialized,      setInitialized]      = useState(false);
 
-  // ── Catalog v2 state (managed outside react-hook-form for flexibility) ──
+  // Catalog v2 state
   const [highlights,       setHighlights]       = useState<string[]>([]);
   const [specifications,   setSpecifications]   = useState<Specifications>({});
   const [manufacturerInfo, setManufacturerInfo] = useState<ManufacturerInfo>({});
 
   const {
-    register, handleSubmit, control, setValue, watch, getValues,
+    register, handleSubmit, control, setValue, watch, reset,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -272,8 +257,12 @@ export default function NewProductPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: "variants" });
 
-  const nameValue  = watch("name");
-  const brandValue = watch("brand");
+  // ── Fetch product ────────────────────────────────────────────────────────
+  const { data: product, isLoading: fetching } = useQuery<Product>({
+    queryKey: ["admin-product", id],
+    queryFn: () => api.get(`/products/${id}`).then(r => r.data),
+    enabled: !!id,
+  });
 
   const { data: parentCats = [] } = useQuery<any[]>({
     queryKey: ["categories-root"],
@@ -286,16 +275,55 @@ export default function NewProductPage() {
     enabled: !!parentCatId,
   });
 
-  const autoGenSlug = () => {
-    const name = getValues("name");
-    if (name) setValue("slug", toSlug(name), { shouldValidate: true });
-  };
+  // ── Pre-populate form when product data arrives ──────────────────────────
+  useEffect(() => {
+    if (!product || initialized) return;
 
-  const autoGenSku = () => {
-    const name  = getValues("name");
-    const brand = getValues("brand") || "";
-    if (name) setValue("sku", toSku(name, brand));
-  };
+    reset({
+      name:                product.name,
+      slug:                product.slug,
+      sku:                 product.sku        ?? "",
+      description:         product.description       ?? "",
+      short_description:   product.short_description ?? "",
+      brand:               product.brand      ?? "",
+      price:               product.price,
+      compare_price:       product.compare_price ?? undefined,
+      cost_price:          undefined,
+      stock:               product.stock,
+      low_stock_threshold: 5,
+      weight:              undefined,
+      status:              product.status as any,
+      is_featured:         product.is_featured,
+      is_best_seller:      product.is_best_seller,
+      category_id:         product.category_id ?? null,
+      meta_title:          "",
+      meta_description:    "",
+      difficulty_level:    (product.difficulty_level as any) ?? "",
+      gender:              (product.gender as any) ?? "",
+      variants: (product.variants ?? []).map(v => ({
+        name:           v.name,
+        value:          v.value,
+        price_modifier: v.price_modifier,
+        stock:          v.stock,
+        is_active:      v.is_active,
+      })),
+    });
+
+    // Images
+    setImages((product.images ?? []).map(img => ({
+      id:         img.id,
+      url:        img.url,
+      alt_text:   img.alt_text ?? "",
+      is_primary: img.is_primary,
+    })));
+
+    // Catalog v2
+    setHighlights(product.highlights ?? []);
+    setSpecifications((product.specifications as Specifications) ?? {});
+    setManufacturerInfo((product.manufacturer_info as ManufacturerInfo) ?? {});
+
+    setInitialized(true);
+  }, [product, initialized, reset]);
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -303,51 +331,61 @@ export default function NewProductPage() {
     try {
       const payload = {
         ...data,
-        // Convert empty string to null for optional enum fields
-        difficulty_level: data.difficulty_level || null,
-        gender:           data.gender           || null,
+        difficulty_level:  data.difficulty_level || null,
+        gender:            data.gender           || null,
         // Catalog v2
-        highlights:       highlights.filter(h => h.trim()),
-        specifications:   Object.keys(specifications).length ? specifications : null,
+        highlights:        highlights.filter(h => h.trim()),
+        specifications:    Object.keys(specifications).length ? specifications : null,
         manufacturer_info: Object.keys(manufacturerInfo).length ? manufacturerInfo : null,
         images: images.map(img => ({
           url: img.url, public_id: img.public_id,
           alt_text: img.alt_text, is_primary: img.is_primary,
         })),
       };
-      await api.post("/products", payload);
+      await api.put(`/products/${id}`, payload);
       await qc.invalidateQueries({ queryKey: ["admin-products"] });
       await qc.invalidateQueries({ queryKey: ["products"] });
-      await qc.invalidateQueries({ queryKey: ["admin-inventory"] });
-      toast.success("Product created!");
+      await qc.invalidateQueries({ queryKey: ["product"] });
+      await qc.invalidateQueries({ queryKey: ["admin-product", id] });
+      toast.success("Product updated!");
       router.push("/admin/products");
     } catch (e: any) {
       const detail = e.response?.data?.detail;
       if (typeof detail === "string") {
-        if (detail.toLowerCase().includes("slug")) {
-          setServerError("A product with this URL slug already exists. Please use a different slug.");
-        } else if (detail.toLowerCase().includes("sku")) {
-          setServerError("This SKU is already in use. Please use a unique SKU.");
-        } else if (detail.toLowerCase().includes("name") || detail.toLowerCase().includes("duplicate")) {
-          setServerError("A product with this name already exists.");
-        } else {
-          setServerError(detail);
-        }
+        setServerError(detail);
       } else if (Array.isArray(detail)) {
-        // Pydantic validation error array
         const msgs = detail.map((d: any) => {
           const loc = d.loc?.slice(1).join(" → ") || "field";
           return `${loc}: ${d.msg}`;
         }).join("\n");
         setServerError(msgs);
       } else {
-        setServerError("Failed to create product. Please check all fields and try again.");
+        setServerError("Failed to update product.");
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetching) {
+    return (
+      <div className="max-w-3xl space-y-5 animate-pulse">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-200 h-40" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-gray-500">Product not found.</p>
+        <Link href="/admin/products" className="text-brand-600 underline mt-2 inline-block">Back to products</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -358,8 +396,8 @@ export default function NewProductPage() {
           <ArrowLeft size={16} />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Add New Product</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Fields marked <span className="text-red-500">*</span> are required</p>
+          <h1 className="text-xl font-bold text-gray-900">Edit Product</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{product.name}</p>
         </div>
       </div>
 
@@ -368,7 +406,7 @@ export default function NewProductPage() {
         <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 flex items-start gap-3">
           <span className="text-red-500 text-lg shrink-0">⚠</span>
           <div>
-            <p className="font-bold text-red-700 text-sm">Could not create product</p>
+            <p className="font-bold text-red-700 text-sm">Could not update product</p>
             <pre className="text-red-600 text-sm mt-0.5 whitespace-pre-wrap font-sans">{serverError}</pre>
           </div>
           <button onClick={() => setServerError(null)} className="ml-auto text-red-400 hover:text-red-600">
@@ -383,50 +421,30 @@ export default function NewProductPage() {
         <Card title="Basic Information">
           <div>
             <Lbl required>Product Name</Lbl>
-            <input {...register("name")} onBlur={autoGenSlug}
-              className={`${iCls} ${errors.name ? iErr : ""}`}
-              placeholder="e.g. Yonex Arcsaber 11 Pro" />
+            <input {...register("name")} className={`${iCls} ${errors.name ? iErr : ""}`} />
             <ErrMsg msg={errors.name?.message} />
           </div>
           <div>
             <Lbl required>URL Slug</Lbl>
-            <div className="flex gap-2">
-              <input {...register("slug")}
-                className={`${iCls} font-mono text-sm flex-1 ${errors.slug ? iErr : ""}`}
-                placeholder="yonex-arcsaber-11-pro" />
-              <button type="button" onClick={autoGenSlug}
-                className="px-3 border border-gray-300 rounded-lg text-gray-500 hover:text-brand-600 hover:border-brand-400 transition-colors">
-                <RefreshCw size={14} />
-              </button>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1">yoursite.com/products/<strong>{watch("slug") || "your-slug"}</strong></p>
+            <input {...register("slug")} className={`${iCls} font-mono text-sm ${errors.slug ? iErr : ""}`} />
             <ErrMsg msg={errors.slug?.message} />
           </div>
           <div>
             <Lbl>Short Description</Lbl>
-            <input {...register("short_description")} className={iCls} placeholder="One-line summary shown in listings" />
+            <input {...register("short_description")} className={iCls} />
           </div>
           <div>
             <Lbl>Full Description</Lbl>
-            <textarea {...register("description")} rows={5}
-              className={`${iCls} resize-none leading-relaxed`}
-              placeholder="Detailed product description…" />
+            <textarea {...register("description")} rows={5} className={`${iCls} resize-none`} />
           </div>
           <div className="grid grid-cols-2 gap-5">
             <div>
               <Lbl>Brand</Lbl>
-              <input {...register("brand")} className={iCls} placeholder="Yonex" />
+              <input {...register("brand")} className={iCls} />
             </div>
             <div>
               <Lbl>SKU</Lbl>
-              <div className="flex gap-2">
-                <input {...register("sku")} className={`${iCls} font-mono flex-1`} placeholder="YON-ARC11P-4U5" />
-                <button type="button" onClick={autoGenSku}
-                  className="px-3 border border-gray-300 rounded-lg text-gray-500 hover:text-brand-600 hover:border-brand-400 transition-colors">
-                  <Sparkles size={14} />
-                </button>
-              </div>
-              <p className="text-[11px] text-gray-400 mt-1">Click ✦ to auto-generate</p>
+              <input {...register("sku")} className={`${iCls} font-mono`} />
             </div>
           </div>
         </Card>
@@ -439,34 +457,25 @@ export default function NewProductPage() {
         {/* ── Catalog v2: Highlights ───────────────────────────────────── */}
         <Card
           title="Product Highlights"
-          subtitle="Bullet points shown prominently on the product page (e.g. key features, benefits)"
+          subtitle="Bullet points shown prominently on the product page"
         >
-          <HighlightsEditor
-            value={highlights}
-            onChange={setHighlights}
-          />
+          <HighlightsEditor value={highlights} onChange={setHighlights} />
         </Card>
 
         {/* ── Catalog v2: Specifications ───────────────────────────────── */}
         <Card
           title="Specifications"
-          subtitle="Grouped spec sections shown in the Details & Specs tab. Supports dynamic sections and fields."
+          subtitle="Grouped spec sections — fully dynamic, no hardcoded fields"
         >
-          <SpecificationBuilder
-            value={specifications}
-            onChange={setSpecifications}
-          />
+          <SpecificationBuilder value={specifications} onChange={setSpecifications} />
         </Card>
 
         {/* ── Catalog v2: Manufacturer Info ────────────────────────────── */}
         <Card
           title="Manufacturer Information"
-          subtitle="Compliance and manufacturer details (e.g. Country of Origin, FSSAI)"
+          subtitle="Compliance and manufacturer details"
         >
-          <ManufacturerInfoEditor
-            value={manufacturerInfo}
-            onChange={setManufacturerInfo}
-          />
+          <ManufacturerInfoEditor value={manufacturerInfo} onChange={setManufacturerInfo} />
         </Card>
 
         {/* ── Category ────────────────────────────────────────────────── */}
@@ -496,17 +505,13 @@ export default function NewProductPage() {
                 disabled={!parentCatId}
                 className={`${iCls} disabled:bg-gray-50 disabled:cursor-not-allowed`}
               >
-                <option value="">{parentCatId ? "— Select Sub-category —" : "Select a sport first"}</option>
+                <option value="">
+                  {parentCatId ? "— Select Sub-category —" : "Select a sport first"}
+                </option>
                 {subCats.map((c: any) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-              {parentCatId && subCats.length === 0 && (
-                <p className="text-xs text-amber-600 mt-1">
-                  No sub-categories yet —{" "}
-                  <Link href="/admin/categories" className="underline">Create one</Link>
-                </p>
-              )}
             </div>
           </div>
         </Card>
@@ -517,42 +522,39 @@ export default function NewProductPage() {
             <div>
               <Lbl required>Selling Price (₹)</Lbl>
               <input type="number" step="0.01" {...register("price")}
-                className={`${iCls} ${errors.price ? iErr : ""}`} placeholder="2499" />
+                className={`${iCls} ${errors.price ? iErr : ""}`} />
               <ErrMsg msg={errors.price?.message} />
             </div>
             <div>
               <Lbl>Compare Price (₹)</Lbl>
-              <input type="number" step="0.01" {...register("compare_price")} className={iCls} placeholder="3499" />
-              <p className="text-[11px] text-gray-400 mt-1">Shown as strikethrough</p>
+              <input type="number" step="0.01" {...register("compare_price")} className={iCls} />
             </div>
             <div>
               <Lbl>Cost Price (₹)</Lbl>
-              <input type="number" step="0.01" {...register("cost_price")} className={iCls} placeholder="1200" />
-              <p className="text-[11px] text-gray-400 mt-1">Internal use only</p>
+              <input type="number" step="0.01" {...register("cost_price")} className={iCls} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-5">
             <div>
               <Lbl required>Stock Qty</Lbl>
               <input type="number" {...register("stock")}
-                className={`${iCls} ${errors.stock ? iErr : ""}`} placeholder="100" />
+                className={`${iCls} ${errors.stock ? iErr : ""}`} />
               <ErrMsg msg={errors.stock?.message} />
             </div>
             <div>
               <Lbl>Low Stock Alert</Lbl>
-              <input type="number" {...register("low_stock_threshold")} className={iCls} placeholder="5" />
+              <input type="number" {...register("low_stock_threshold")} className={iCls} />
             </div>
             <div>
               <Lbl>Weight (kg)</Lbl>
-              <input type="number" step="0.001" {...register("weight")} className={iCls} placeholder="0.085" />
+              <input type="number" step="0.001" {...register("weight")} className={iCls} />
             </div>
           </div>
         </Card>
 
-        {/* ── BUG 1 + FEATURE 2: Classification ────────────────────────── */}
+        {/* ── Classification ────────────────────────────────────────────── */}
         <Card title="Classification">
           <div className="grid grid-cols-2 gap-5">
-            {/* BUG 1 FIX — Difficulty Level */}
             <div>
               <Lbl>Difficulty Level</Lbl>
               <select {...register("difficulty_level")} className={iCls}>
@@ -561,9 +563,7 @@ export default function NewProductPage() {
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
               </select>
-              <p className="text-[11px] text-gray-400 mt-1">Skill level required to use this product</p>
             </div>
-            {/* FEATURE 2 — Gender Category */}
             <div>
               <Lbl>Gender Category</Lbl>
               <select {...register("gender")} className={iCls}>
@@ -574,7 +574,6 @@ export default function NewProductPage() {
                 <option value="boys">Boys</option>
                 <option value="girls">Girls</option>
               </select>
-              <p className="text-[11px] text-gray-400 mt-1">Gender classification for apparel / equipment</p>
             </div>
           </div>
         </Card>
@@ -587,6 +586,7 @@ export default function NewProductPage() {
               <option value="active">Active — visible in store</option>
               <option value="inactive">Inactive — hidden from store</option>
               <option value="draft">Draft — work in progress</option>
+              <option value="out_of_stock">Out of Stock</option>
             </select>
           </div>
           <div className="flex gap-6">
@@ -606,7 +606,7 @@ export default function NewProductPage() {
         {/* ── Variants ─────────────────────────────────────────────────── */}
         <Card title="Variants — Size, Colour, Weight">
           <div className="flex items-center justify-between -mt-2">
-            <p className="text-sm text-gray-500">Leave empty if the product has no variants.</p>
+            <p className="text-sm text-gray-500">Note: editing variants here replaces the full variants list.</p>
             <button type="button"
               onClick={() => append({ name: "", value: "", price_modifier: 0, stock: 0, is_active: true })}
               className="flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 font-semibold">
@@ -614,30 +614,28 @@ export default function NewProductPage() {
             </button>
           </div>
           {fields.length === 0 ? (
-            <p className="text-sm text-gray-400 py-2">No variants added.</p>
+            <p className="text-sm text-gray-400 py-2">No variants.</p>
           ) : (
             <div className="space-y-3">
               {fields.map((field, i) => (
                 <div key={field.id} className="grid grid-cols-5 gap-3 items-end">
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Type <Req /></label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Type</label>
                     <input {...register(`variants.${i}.name`)} className={iCls} placeholder="Size" />
-                    <ErrMsg msg={(errors.variants as any)?.[i]?.name?.message} />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Value <Req /></label>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Value</label>
                     <input {...register(`variants.${i}.value`)} className={iCls} placeholder="XL" />
-                    <ErrMsg msg={(errors.variants as any)?.[i]?.value?.message} />
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 mb-1 block">Price Adj (₹)</label>
                     <input type="number" {...register(`variants.${i}.price_modifier`, { valueAsNumber: true })}
-                      className={iCls} placeholder="0" />
+                      className={iCls} />
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 mb-1 block">Stock</label>
                     <input type="number" {...register(`variants.${i}.stock`, { valueAsNumber: true })}
-                      className={iCls} placeholder="0" />
+                      className={iCls} />
                   </div>
                   <button type="button" onClick={() => remove(i)}
                     className="h-[42px] flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
@@ -653,14 +651,11 @@ export default function NewProductPage() {
         <Card title="SEO (Optional)">
           <div>
             <Lbl>Meta Title</Lbl>
-            <input {...register("meta_title")} className={iCls}
-              placeholder="Buy Yonex Arcsaber 11 Pro Online | RacketOutlet" />
+            <input {...register("meta_title")} className={iCls} />
           </div>
           <div>
             <Lbl>Meta Description</Lbl>
-            <textarea {...register("meta_description")} rows={2}
-              className={`${iCls} resize-none`}
-              placeholder="Shop the Yonex Arcsaber 11 Pro at best price…" />
+            <textarea {...register("meta_description")} rows={2} className={`${iCls} resize-none`} />
           </div>
         </Card>
 
@@ -668,8 +663,10 @@ export default function NewProductPage() {
         <div className="flex gap-4 pb-6">
           <button type="submit" disabled={loading}
             className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-            {loading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-            {loading ? "Creating…" : "Create Product"}
+            {loading
+              ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</>
+              : <><Save size={16} /> Save Changes</>
+            }
           </button>
           <Link href="/admin/products"
             className="flex-1 border-2 border-gray-300 text-gray-700 font-bold py-3 rounded-xl text-center hover:bg-gray-50 transition-colors">

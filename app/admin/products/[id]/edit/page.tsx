@@ -1,4 +1,13 @@
 "use client";
+/**
+ * Admin Edit Product — Catalog v2
+ *
+ * New sections added:
+ *   • Highlights    — HighlightsEditor component
+ *   • Specifications — SpecificationBuilder component
+ *   • Manufacturer Info — SpecificationBuilder (flat section named "Manufacturer")
+ *     stored separately as manufacturer_info flat dict
+ */
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +19,9 @@ import Link from "next/link";
 import Image from "next/image";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
+import SpecificationBuilder, { Specifications } from "@/components/admin/SpecificationBuilder";
+import HighlightsEditor from "@/components/admin/HighlightsEditor";
+import type { ManufacturerInfo } from "@/types";
 
 const variantSchema = z.object({
   id: z.number().optional(),
@@ -48,33 +60,36 @@ export default function EditProductPage() {
   const router = useRouter();
   const qc     = useQueryClient();
   const { id } = useParams<{ id: string }>();
-  const [loading, setLoading] = useState(false);
+  const [loading,  setLoading]  = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [product, setProduct] = useState<any>(null);
+  const [product,  setProduct]  = useState<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [images, setImages] = useState<any[]>([]);
 
+  // ── Catalog v2 state (managed outside react-hook-form) ─────────────────
+  const [highlights,      setHighlights]      = useState<string[]>([]);
+  const [specifications,  setSpecifications]  = useState<Specifications>({});
+  const [manufacturerInfo, setManufacturerInfo] = useState<ManufacturerInfo>({});
+
   const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    setValue,
-    watch,
+    register, handleSubmit, control, reset, setValue, watch,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const { fields, append, remove } = useFieldArray({ control, name: "variants" });
   const nameValue = watch("name");
 
-  // Fetch existing product data
+  // ── Fetch existing product ──────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
-    api.get(`/admin/products/${id}`)  // now hits GET /admin/products/{id}
+    api.get(`/admin/products/${id}`)
       .then((r) => {
         const p = r.data;
         setProduct(p);
         setImages(p.images || []);
+        setHighlights(p.highlights || []);
+        setSpecifications(p.specifications || {});
+        setManufacturerInfo(p.manufacturer_info || {});
         reset({
           name: p.name,
           slug: p.slug,
@@ -164,8 +179,14 @@ export default function EditProductPage() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const { data: updated } = await api.put(`/admin/products/${id}`, data);
-      // Bust every cached query that could show stale product data
+      const payload = {
+        ...data,
+        // Catalog v2 fields
+        highlights:       highlights.filter((h) => h.trim() !== ""),
+        specifications:   specifications,
+        manufacturer_info: manufacturerInfo,
+      };
+      const { data: updated } = await api.put(`/admin/products/${id}`, payload);
       await qc.invalidateQueries({ queryKey: ["admin-products"] });
       await qc.invalidateQueries({ queryKey: ["admin-product", id] });
       await qc.invalidateQueries({ queryKey: ["product", updated.slug] });
@@ -173,7 +194,14 @@ export default function EditProductPage() {
       toast.success("Product updated!");
       router.push("/admin/products");
     } catch (e: any) {
-      toast.error(e.response?.data?.detail || "Update failed");
+      const detail = e.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        // Pydantic validation errors
+        const msgs = detail.map((d: any) => `${d.loc?.join(".")} — ${d.msg}`).join("; ");
+        toast.error(msgs, { duration: 6000 });
+      } else {
+        toast.error(detail || "Update failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -212,7 +240,7 @@ export default function EditProductPage() {
         </div>
       </div>
 
-      {/* ── Images Management ────────────────────────────────────── */}
+      {/* ── Images ─────────────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
           <ImageIcon size={16} /> Product Images
@@ -228,23 +256,14 @@ export default function EditProductPage() {
               )}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
                 {!img.is_primary && (
-                  <button
-                    onClick={() => setPrimaryImage(img.id)}
-                    className="text-white text-xs bg-brand-600 px-2 py-0.5 rounded"
-                  >
+                  <button onClick={() => setPrimaryImage(img.id)} className="text-white text-xs bg-brand-600 px-2 py-0.5 rounded">
                     Set Primary
                   </button>
                 )}
-                <button
-                  onClick={() => removeImage(img.id)}
-                  className="text-white"
-                >
-                  <X size={16} />
-                </button>
+                <button onClick={() => removeImage(img.id)} className="text-white"><X size={16} /></button>
               </div>
             </div>
           ))}
-          {/* Upload button */}
           <label className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-brand-400 transition-colors text-gray-400 hover:text-brand-500">
             {uploadingImage ? (
               <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -254,20 +273,13 @@ export default function EditProductPage() {
                 <span className="text-xs mt-1">Upload</span>
               </>
             )}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-              disabled={uploadingImage}
-            />
+            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
           </label>
         </div>
-        <p className="text-xs text-gray-400">Click an image to set as primary or remove. Upload new images via the + button.</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* ── Basic Info ────────────────────────────────────────── */}
+        {/* ── Basic Info ──────────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
           <h2 className="font-bold text-gray-800">Basic Information</h2>
           <div>
@@ -300,7 +312,54 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* ── Pricing & Stock ───────────────────────────────────── */}
+        {/* ── Catalog v2: Product Highlights ──────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-3">
+          <div>
+            <h2 className="font-bold text-gray-800">Product Highlights</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Bullet-point features shown prominently on the product page (e.g. "Lightweight 85g frame").
+            </p>
+          </div>
+          <HighlightsEditor value={highlights} onChange={setHighlights} />
+        </div>
+
+        {/* ── Catalog v2: Specifications ───────────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-3">
+          <div>
+            <h2 className="font-bold text-gray-800">Specifications</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Group product specs by section (e.g. General → Brand, Color; Dimensions → Weight, Length).
+              Values must be text, numbers, or Yes/No — no lists or nested objects.
+            </p>
+          </div>
+          <SpecificationBuilder value={specifications} onChange={setSpecifications} />
+        </div>
+
+        {/* ── Catalog v2: Manufacturer Info ────────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-3">
+          <div>
+            <h2 className="font-bold text-gray-800">Manufacturer & Compliance</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Add a single "Manufacturer" section with fields like Manufacturer, Country of Origin,
+              Importer, Net Quantity, etc.
+            </p>
+          </div>
+          {/* Manufacturer info is a flat dict — wrap it as a single-section spec builder */}
+          <SpecificationBuilder
+            value={
+              Object.keys(manufacturerInfo).length
+                ? { "Manufacturer": manufacturerInfo as Record<string, string | number | boolean> }
+                : {}
+            }
+            onChange={(val) => {
+              // Flatten back: take first section (or empty)
+              const firstSection = Object.values(val)[0] ?? {};
+              setManufacturerInfo(firstSection);
+            }}
+          />
+        </div>
+
+        {/* ── Pricing & Stock ──────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
           <h2 className="font-bold text-gray-800">Pricing & Stock</h2>
           <div className="grid grid-cols-3 gap-4">
@@ -334,7 +393,7 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* ── Status & Flags ────────────────────────────────────── */}
+        {/* ── Status & Flags ───────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
           <h2 className="font-bold text-gray-800">Status & Visibility</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -370,7 +429,7 @@ export default function EditProductPage() {
           )}
         </div>
 
-        {/* ── Variants ─────────────────────────────────────────── */}
+        {/* ── Variants ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-gray-800">Variants (Size, Color, Weight)</h2>
@@ -413,7 +472,7 @@ export default function EditProductPage() {
           )}
         </div>
 
-        {/* ── SEO ──────────────────────────────────────────────── */}
+        {/* ── SEO ──────────────────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
           <h2 className="font-bold text-gray-800">SEO</h2>
           <div>
