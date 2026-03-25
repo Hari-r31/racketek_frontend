@@ -81,6 +81,7 @@ export default function ShopTheLook({ data }: Props) {
   };
 
   return (
+    /* FIX: bg-gray-50 → covered by global */
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -112,6 +113,7 @@ export default function ShopTheLook({ data }: Props) {
                   <span className={`block w-6 h-6 rounded-full border-2 border-white relative transition-all ${active === item.id ? "bg-brand-600 scale-125" : "bg-white/80 hover:scale-110"}`}>
                     {active === item.id && <span className="absolute inset-0 rounded-full bg-brand-600 animate-ping opacity-60" />}
                   </span>
+                  {/* Tooltip always uses light colors (overlaid on image — intentional) */}
                   <span className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs font-bold bg-white text-gray-900 px-2 py-1 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${getSide(item) === "right" ? "left-8" : "right-8"}`}>
                     {item.label}
                   </span>
@@ -119,11 +121,15 @@ export default function ShopTheLook({ data }: Props) {
               ))}
             </div>
 
-            {/* Legend pills */}
+            {/* Legend pills — FIX: bg-white border-gray-200 → dark variants */}
             <div className="flex flex-wrap gap-2 mt-4 justify-center">
               {products.map((item) => (
                 <button key={item.id} onClick={() => setActive(active === item.id ? null : item.id)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all ${active === item.id ? "bg-brand-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-brand-400"}`}>
+                  className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all ${
+                    active === item.id
+                      ? "bg-brand-600 text-white"
+                      : "bg-white dark:bg-[rgb(var(--surface-2))] border border-gray-200 text-gray-600 hover:border-brand-400"
+                  }`}>
                   {item.label}
                 </button>
               ))}
@@ -142,7 +148,8 @@ export default function ShopTheLook({ data }: Props) {
               const discount     = prod ? getDiscountPercent(prod.price, prod.compare_price) : 0;
 
               return (
-                <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100">
+                /* FIX: bg-white border-gray-100 → dark variants */
+                <div className="bg-white dark:bg-[rgb(var(--surface-0))] rounded-3xl p-6 shadow-lg border border-gray-100">
                   <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-50">
                     {displayImg
                       ? <Image src={displayImg} alt={displayName} fill className="object-contain p-4" />
@@ -169,13 +176,14 @@ export default function ShopTheLook({ data }: Props) {
                   <div className="space-y-2">
                     {prod ? (
                       <>
+                        {/* FIX: bg-black hover:bg-gray-800 → dark variants */}
                         <button onClick={() => handleAddToCart(prod.id)} disabled={adding || prod.stock === 0}
-                          className="w-full flex items-center justify-center gap-2 bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-all hover:scale-[1.02] disabled:opacity-50">
+                          className="w-full flex items-center justify-center gap-2 bg-black dark:bg-white text-white dark:text-black font-bold py-3 rounded-xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all hover:scale-[1.02] disabled:opacity-50">
                           <ShoppingCart size={16} />
                           {adding ? "Adding…" : added[prod.id] ? "Added!" : "Add to Cart"}
                         </button>
                         {added[prod.id] && (
-                          <Link href="/cart" className="flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 font-bold py-2.5 rounded-xl hover:bg-brand-50 transition-colors text-sm">
+                          <Link href="/cart" className="flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 font-bold py-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/40 transition-colors text-sm">
                             Go to Cart <ArrowRight size={14} />
                           </Link>
                         )}
@@ -193,7 +201,8 @@ export default function ShopTheLook({ data }: Props) {
                 </div>
               );
             })() : (
-              <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-center">
+              /* FIX: bg-white border-gray-100 → dark variants */
+              <div className="bg-white dark:bg-[rgb(var(--surface-0))] rounded-3xl p-8 shadow-sm border border-gray-100 text-center">
                 <span className="text-5xl block mb-3">👆</span>
                 <p className="text-gray-500 font-medium">Click a hotspot to see the product</p>
               </div>

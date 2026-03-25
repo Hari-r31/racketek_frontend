@@ -48,7 +48,8 @@ export default function MovementSection({ data }: Props) {
                 {line.split(highlight)[0]}
                 <span className="relative inline-block">
                   <span className="relative z-10 text-brand-600">{highlight}</span>
-                  <span className="absolute bottom-2 left-0 right-0 h-3 bg-brand-100 -z-0" aria-hidden />
+                  {/* FIX: bg-brand-100 on dark → use a brand-tinted dark token */}
+                  <span className="absolute bottom-2 left-0 right-0 h-3 bg-brand-100 dark:bg-brand-900/60 -z-0" aria-hidden />
                 </span>
                 {line.split(highlight)[1]}
               </>
@@ -60,6 +61,7 @@ export default function MovementSection({ data }: Props) {
   };
 
   return (
+    /* FIX: bg-white → also bg-white (covered by global), but keep explicit for clarity */
     <section className="py-20 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -68,10 +70,12 @@ export default function MovementSection({ data }: Props) {
             viewport={{ once: true }} transition={{ duration: 0.7, ease: "easeOut" }}>
             {buildHeading()}
             <Link href={cta_link} className="inline-flex items-center gap-3 group">
-              <span className="w-12 h-12 bg-black rounded-full flex items-center justify-center group-hover:bg-brand-600 transition-colors">
-                <ArrowRight size={18} className="text-white group-hover:translate-x-0.5 transition-transform" />
+              {/* FIX: bg-black → dark:bg-white dark:text-black so button stays visible */}
+              <span className="w-12 h-12 bg-black dark:bg-white rounded-full flex items-center justify-center group-hover:bg-brand-600 dark:group-hover:bg-brand-500 transition-colors">
+                <ArrowRight size={18} className="text-white dark:text-black group-hover:text-white group-hover:translate-x-0.5 transition-transform" />
               </span>
-              <span className="font-black text-lg text-black group-hover:text-brand-600 transition-colors tracking-wide">
+              {/* FIX: text-black → text-gray-900 so it uses the overridden token */}
+              <span className="font-black text-lg text-gray-900 group-hover:text-brand-600 transition-colors tracking-wide">
                 {cta_text}
               </span>
             </Link>

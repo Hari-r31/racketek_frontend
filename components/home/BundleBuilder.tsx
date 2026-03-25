@@ -73,11 +73,7 @@ export default function BundleBuilder({ data }: Props) {
   const maxCapPct      = data?.bundle_discount_max_cap  ?? 50;
   const products       = data?.products             || [];
 
-
-
   // ── Real-time pricing recalculation ───────────────────────────────────
-  // Pure client-side: mirrors the backend formula exactly so no latency.
-  // The backend /bundle/calculate endpoint is an optional validation layer.
   const recalculate = useCallback(
     (nextSelected: Map<number, number>) => {
       let subtotal   = 0;
@@ -201,10 +197,11 @@ export default function BundleBuilder({ data }: Props) {
                       onClick={() => toggle(p.id)}
                       className={`cursor-pointer rounded-2xl border-2 overflow-hidden transition-all duration-200 ${
                         isSelected
-                          ? "border-brand-600 shadow-lg shadow-brand-100"
+                          ? "border-brand-600 shadow-lg shadow-brand-100 dark:shadow-brand-900/30"
                           : "border-gray-100 hover:border-gray-300"
                       }`}
                     >
+                      {/* FIX: bg-gray-50 image area → covered by global */}
                       <div className="relative aspect-square bg-gray-50">
                         {img
                           ? <Image src={img} alt={p.name} fill className="object-cover" />
@@ -231,19 +228,19 @@ export default function BundleBuilder({ data }: Props) {
                       </div>
                     </div>
 
-                    {/* Qty stepper */}
+                    {/* Qty stepper — FIX: bg-white border-brand-200 → dark variants */}
                     {isSelected && (
-                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center bg-white border border-brand-200 rounded-full shadow-md overflow-hidden z-10">
+                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center bg-white dark:bg-[rgb(var(--surface-2))] border border-brand-200 rounded-full shadow-md overflow-hidden z-10">
                         <button
                           onClick={() => changeQty(p.id, -1)}
-                          className="w-7 h-7 flex items-center justify-center text-brand-600 hover:bg-brand-50"
+                          className="w-7 h-7 flex items-center justify-center text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/40"
                         >
                           <Minus size={12} />
                         </button>
                         <span className="text-xs font-black px-2 text-gray-900">{qty}</span>
                         <button
                           onClick={() => changeQty(p.id, 1)}
-                          className="w-7 h-7 flex items-center justify-center text-brand-600 hover:bg-brand-50"
+                          className="w-7 h-7 flex items-center justify-center text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/40"
                         >
                           <Plus size={12} />
                         </button>
@@ -257,6 +254,7 @@ export default function BundleBuilder({ data }: Props) {
 
           {/* ── Right: sticky bundle cart panel ─────────────────────── */}
           <div className="lg:col-span-1">
+            {/* FIX: bg-gray-50 → covered by global; border-gray-200 → covered by global */}
             <div className="sticky top-24 bg-gray-50 rounded-2xl border border-gray-200 p-6">
 
               {/* Discount badge */}
@@ -285,7 +283,8 @@ export default function BundleBuilder({ data }: Props) {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
-                        className="flex items-center gap-2 bg-white rounded-xl p-2 border border-gray-100"
+                        /* FIX: bg-white border-gray-100 → dark variants via globals + explicit */
+                        className="flex items-center gap-2 bg-white dark:bg-[rgb(var(--surface-2))] rounded-xl p-2 border border-gray-100"
                       >
                         <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-50 shrink-0">
                           {getImg(p) && (
@@ -313,8 +312,9 @@ export default function BundleBuilder({ data }: Props) {
                 </AnimatePresence>
               </div>
 
-              {/* ── Pricing breakdown (always visible, updates instantly) ── */}
-              <div className="bg-white rounded-xl border border-gray-100 p-3 mb-4 space-y-2">
+              {/* ── Pricing breakdown ── */}
+              {/* FIX: bg-white border-gray-100 → dark variants */}
+              <div className="bg-white dark:bg-[rgb(var(--surface-2))] rounded-xl border border-gray-100 p-3 mb-4 space-y-2">
 
                 {/* Items selected */}
                 <div className="flex items-center justify-between text-xs">
@@ -339,7 +339,7 @@ export default function BundleBuilder({ data }: Props) {
                     <Percent size={12} />
                     Bundle Discount
                     {isCapHit && (
-                      <span className="text-[10px] bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded-full font-black">
+                      <span className="text-[10px] bg-brand-50 dark:bg-brand-900/40 text-brand-700 px-1.5 py-0.5 rounded-full font-black">
                         MAX
                       </span>
                     )}
@@ -393,13 +393,14 @@ export default function BundleBuilder({ data }: Props) {
                 </div>
               </div>
 
-              {/* Progress hint — how far to next discount step */}
+              {/* Progress hint */}
               {pricing.item_count > 0 && !isCapHit && (
                 <div className="mb-3">
                   <div className="flex justify-between text-[10px] text-gray-400 mb-1">
                     <span>{pricing.discount_percent}% discount applied</span>
                     <span>{maxCapPct}% max</span>
                   </div>
+                  {/* FIX: bg-gray-100 → covered by global */}
                   <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-brand-600 rounded-full"
@@ -410,11 +411,11 @@ export default function BundleBuilder({ data }: Props) {
                 </div>
               )}
 
-              {/* Add to cart CTA */}
+              {/* Add to cart CTA — FIX: bg-black → dark:bg-white dark:text-black dark:hover:bg-gray-100 */}
               <button
                 onClick={addAllToCart}
                 disabled={adding || pricing.item_count < minItems}
-                className="w-full flex items-center justify-center gap-2 bg-black text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-all disabled:opacity-40"
+                className="w-full flex items-center justify-center gap-2 bg-black dark:bg-white text-white dark:text-black font-bold py-3.5 rounded-xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all disabled:opacity-40"
               >
                 <ShoppingCart size={16} />
                 {adding ? "Adding…" : `Add ${pricing.item_count || ""} to Cart`}
@@ -429,7 +430,7 @@ export default function BundleBuilder({ data }: Props) {
                 </Link>
               )}
 
-              {/* Trust badges */}
+              {/* Trust badges — FIX: border-gray-200 → covered by global */}
               <div className="flex flex-col gap-1.5 mt-4 pt-4 border-t border-gray-200">
                 {badges.map((b) => (
                   <p key={b} className="text-[11px] text-gray-500 font-medium flex items-center gap-1.5">

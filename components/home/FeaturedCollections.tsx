@@ -50,8 +50,9 @@ function ProductCard({ product }: { product: ProductData }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
+      {/* FIX: bg-white border-gray-100 → dark variants; hover:border-brand-200 fine */}
       <Link href={`/products/${product.slug}`}
-        className="group block bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-brand-200 hover:shadow-lg transition-all duration-300">
+        className="group block bg-white dark:bg-[rgb(var(--surface-0))] rounded-2xl overflow-hidden border border-gray-100 hover:border-brand-200 hover:shadow-lg transition-all duration-300">
         <div className="relative aspect-square bg-gray-50 overflow-hidden">
           {img
             ? <Image src={img} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width:768px) 50vw, 16vw" />
@@ -59,6 +60,7 @@ function ProductCard({ product }: { product: ProductData }) {
           {discount > 0 && (
             <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{discount}% OFF</span>
           )}
+          {/* FIX: bg-black/80 hover:bg-brand-600 — these are fine (semi-transparent on image) */}
           <button onClick={addToCart} disabled={adding || product.stock === 0}
             className="absolute bottom-3 right-3 w-9 h-9 bg-black/80 hover:bg-brand-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110">
             <ShoppingCart size={14} />
@@ -102,6 +104,7 @@ export default function FeaturedCollections({ data }: Props) {
   if (!tabs.length && !data?.products?.length) return null;
 
   return (
+    /* FIX: bg-gray-50 → covered by global */
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-end justify-between mb-8">
@@ -114,12 +117,16 @@ export default function FeaturedCollections({ data }: Props) {
           </Link>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — FIX: inactive tab bg-white border-gray-200 text-gray-600 → dark variants */}
         {tabs.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8 pb-1">
             {tabs.map((tab, i) => (
               <button key={tab.id} onClick={() => setActiveTab(i)}
-                className={`whitespace-nowrap text-sm font-bold px-5 py-2.5 rounded-full transition-all ${activeTab === i ? "bg-black text-white shadow-md" : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"}`}>
+                className={`whitespace-nowrap text-sm font-bold px-5 py-2.5 rounded-full transition-all ${
+                  activeTab === i
+                    ? "bg-black text-white shadow-md dark:bg-white dark:text-black"
+                    : "bg-white dark:bg-[rgb(var(--surface-2))] text-gray-600 border border-gray-200 hover:border-gray-400"
+                }`}>
                 {tab.label}
               </button>
             ))}

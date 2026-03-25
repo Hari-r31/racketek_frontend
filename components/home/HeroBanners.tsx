@@ -150,18 +150,40 @@ export default function HeroBanners({ data }: Props) {
                     {banner.subtitle}
                   </p>
                   <div className="flex items-center gap-4 flex-wrap">
+                    {/*
+                      DARK MODE FIX — CTA button:
+                      Light mode: bg-white text-black → white pill, black text ✅
+                      Dark mode:  globals turn bg-white → surface-0 (near-black),
+                                  but text-black stays black → black on black = invisible ❌
+
+                      Fix: use bg-white explicitly on the element with !important-safe
+                      inline approach, OR use [background-color] override via style prop
+                      so globals.css cannot intercept it (globals target .bg-white class,
+                      not inline styles).
+
+                      We keep bg-white as the Tailwind class for light mode, and add
+                      style override only for the dark-mode-affected color, using the
+                      data-theme-inverted attribute as a semantic hook.
+
+                      Cleanest approach: replace bg-white text-black with a brand-neutral
+                      "light pill" that uses explicit dark: variants so neither the global
+                      override nor text-black cause issues.
+                    */}
                     <Link href={(() => {
                       const target = banner.cta_link || banner.link;
-                      // Ensure the link is a valid relative path
                       if (!target || target === '#') return '/products';
-                      // If it starts with / it's a relative path — keep as-is
                       if (target.startsWith('/')) return target;
-                      // Otherwise prefix with /
                       return `/${target}`;
                     })()}
-                      className="inline-flex items-center gap-2 bg-white text-black font-black px-7 py-3.5 rounded-xl hover:bg-brand-500 hover:text-white transition-all duration-200 hover:scale-105 hover:shadow-xl text-sm uppercase tracking-wide">
+                      className="inline-flex items-center gap-2 font-black px-7 py-3.5 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-xl text-sm uppercase tracking-wide
+                        bg-white text-black
+                        hover:bg-brand-500 hover:text-white
+                        dark:bg-brand-500 dark:text-white
+                        dark:hover:bg-brand-400 dark:hover:text-black"
+                    >
                       {banner.cta} <ChevronRight size={15} />
                     </Link>
+                    {/* "View All" secondary link — always on dark hero, no fix needed */}
                     <Link href="/products"
                       className="text-sm font-bold text-white/60 hover:text-white transition-colors">
                       View All →
@@ -173,7 +195,7 @@ export default function HeroBanners({ data }: Props) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Nav arrows */}
+        {/* Nav arrows — bg-black/40 transparent overlays, always fine on hero */}
         <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all hover:scale-110 z-20 backdrop-blur-sm">
           <ChevronLeft size={18} />
         </button>
@@ -181,7 +203,7 @@ export default function HeroBanners({ data }: Props) {
           <ChevronRight size={18} />
         </button>
 
-        {/* Dots */}
+        {/* Dots — bg-white / bg-white/30 on dark hero image, always fine */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
           {items.map((_, i) => (
             <button key={i} onClick={() => go(i)}
@@ -200,8 +222,6 @@ export default function HeroBanners({ data }: Props) {
           2M+ Deliveries · 100% Authentic
         </div>
       </div>
-
-      
     </div>
   );
 }

@@ -7,6 +7,14 @@
  * Rules of Hooks. The early "return null" guard was previously placed
  * AFTER the hooks, causing React error #310 on the first render when
  * data was still loading (undefined product + undefined placeholder).
+ *
+ * DARK MODE FIX:
+ * - bg-white section + image area → covered by global override
+ * - bg-gray-50 image placeholder → covered by global override
+ * - bg-white/80 carousel nav buttons → dark:bg-black/60 dark:hover:bg-black/80
+ * - bg-black "Add to Cart" button → dark:bg-white dark:text-black dark:hover:bg-gray-100
+ * - hover:bg-brand-50 qty buttons → dark:hover:bg-brand-900/40
+ * - border-gray-200 thumbnail strip → covered by global override
  */
 import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
@@ -138,6 +146,7 @@ export default function FeaturedProduct({ data }: Props) {
 
           {/* ── Image gallery ─────────────────────────────────────── */}
           <div>
+            {/* FIX: bg-gray-50 → covered by global; nav buttons bg-white/80 → dark variant */}
             <div className="relative aspect-square bg-gray-50 rounded-2xl overflow-hidden mb-3">
               {images[selImg]?.url ? (
                 <Image src={images[selImg].url} alt={title} fill className="object-contain p-8" priority />
@@ -156,12 +165,13 @@ export default function FeaturedProduct({ data }: Props) {
               )}
               {images.length > 1 && (
                 <>
+                  {/* FIX: bg-white/80 → dark:bg-black/60 */}
                   <button onClick={() => setSelImg((p) => (p - 1 + images.length) % images.length)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md">
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white dark:bg-black/60 dark:hover:bg-black/80 dark:text-white rounded-full flex items-center justify-center shadow-md">
                     <ChevronLeft size={16} />
                   </button>
                   <button onClick={() => setSelImg((p) => (p + 1) % images.length)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white dark:bg-black/60 dark:hover:bg-black/80 dark:text-white rounded-full flex items-center justify-center shadow-md">
                     <ChevronRight size={16} />
                   </button>
                 </>
@@ -241,9 +251,10 @@ export default function FeaturedProduct({ data }: Props) {
                     </button>
                   </div>
                   <div className="flex items-center gap-4 mb-4">
+                    {/* FIX: hover:bg-brand-50 → dark:hover:bg-brand-900/40 */}
                     <div className="flex items-center border-2 border-brand-600 rounded-xl overflow-hidden">
                       <button onClick={handleDecrease}
-                        className="w-12 h-12 flex items-center justify-center hover:bg-brand-50 transition-colors text-brand-600">
+                        className="w-12 h-12 flex items-center justify-center hover:bg-brand-50 dark:hover:bg-brand-900/40 transition-colors text-brand-600">
                         <Minus size={16} />
                       </button>
                       <AnimatePresence mode="wait" initial={false}>
@@ -255,7 +266,7 @@ export default function FeaturedProduct({ data }: Props) {
                         </motion.span>
                       </AnimatePresence>
                       <button onClick={handleIncrease} disabled={cartEntry.quantity >= stock}
-                        className="w-12 h-12 flex items-center justify-center hover:bg-brand-50 transition-colors text-brand-600 disabled:opacity-40">
+                        className="w-12 h-12 flex items-center justify-center hover:bg-brand-50 dark:hover:bg-brand-900/40 transition-colors text-brand-600 disabled:opacity-40">
                         <Plus size={16} />
                       </button>
                     </div>
@@ -271,9 +282,10 @@ export default function FeaturedProduct({ data }: Props) {
                 <motion.div key="not-in-cart"
                   initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="flex gap-3 mb-4">
+                  {/* FIX: bg-black hover:bg-gray-800 → dark:bg-white dark:text-black dark:hover:bg-gray-100 */}
                   <button onClick={handleAdd} disabled={adding || outOfStock}
-                    className="flex-1 flex items-center justify-center gap-2 bg-black hover:bg-gray-800 text-white font-bold py-3.5 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50">
-                    {adding ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <ShoppingCart size={18} />}
+                    className="flex-1 flex items-center justify-center gap-2 bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-100 text-white font-bold py-3.5 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50">
+                    {adding ? <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <ShoppingCart size={18} />}
                     {adding ? "Adding…" : outOfStock ? "Out of Stock" : "Add to Cart"}
                   </button>
                   <button onClick={handleBuyNow} disabled={buyingNow || outOfStock}
@@ -287,7 +299,7 @@ export default function FeaturedProduct({ data }: Props) {
 
             {inCart && (
               <Link href="/cart"
-                className="flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 font-bold py-3 rounded-xl hover:bg-brand-50 transition-colors">
+                className="flex items-center justify-center gap-2 border-2 border-brand-600 text-brand-600 font-bold py-3 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/40 transition-colors">
                 Go to Cart <ArrowRight size={16} />
               </Link>
             )}
